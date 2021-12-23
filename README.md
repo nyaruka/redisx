@@ -1,4 +1,4 @@
-# redisx
+# redisx [![Build Status](https://github.com/nyaruka/redisx/workflows/CI/badge.svg)](https://github.com/nyaruka/redisx/actions?query=workflow%3ACI) [![codecov](https://codecov.io/gh/nyaruka/redisx/branch/main/graph/badge.svg)](https://codecov.io/gh/nyaruka/redisx) [![Go Report Card](https://goreportcard.com/badge/github.com/nyaruka/redisx)](https://goreportcard.com/report/github.com/nyaruka/redisx)
 
 redisx is a library of Go utilities built on the [redigo](github.com/gomodule/redigo) redis client library.
 
@@ -107,3 +107,11 @@ cset.Members(rc)      // ["C", "D", "E"] / [3, 4, 5]
 ## Testing Asserts
 
 The `assertredis` package contains several asserts useful for testing the state of a Redis database.
+
+```go
+rp := assertredis.TestDB()
+
+assertredis.Keys(t, rp, []string{"foo", "bar"})
+assertredis.Get(t, rp, "foo", "123")
+assertredis.SMembers(t, rp, "foo_set", []string{"123", "234"})
+```
