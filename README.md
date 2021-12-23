@@ -7,7 +7,7 @@ redisx is a library of Go utilities built on the [redigo](github.com/gomodule/re
 Creating very large numbers of Redis keys can hurt performance, but putting them all in a single set requires that they all have the same expiration. Marker is a way to have multiple sets based on time intervals, accessible like a single set. You trade accuracy of expiry times for a significantly reduced key space. For example using 2 intervals of 24 hours:
 
 ```go
-marker := NewIntervalSet("foos", time.Hour*24)
+marker := NewIntervalSet("foos", time.Hour*24, 2)
 marker.Add(rc, "A")  // time is 2021-12-02T09:00
 ...
 marker.Add(rc, "B")  // time is 2021-12-03T10:00
