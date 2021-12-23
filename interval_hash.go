@@ -42,7 +42,7 @@ func (h *IntervalHash) Get(rc redis.Conn, field string) (string, error) {
 	return value, nil
 }
 
-// Sets sets the value of the given field
+// Set sets the value of the given field
 func (h *IntervalHash) Set(rc redis.Conn, field, value string) error {
 	key := h.keys()[0]
 

@@ -7,6 +7,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Locker is a lock implementation where grabbing returns a lock value and that value must be
+// used to release or extend the lock.
 type Locker struct {
 	key        string
 	expiration time.Duration
