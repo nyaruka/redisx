@@ -3,8 +3,8 @@ module github.com/nyaruka/redisx
 go 1.17
 
 require (
-	github.com/gomodule/redigo v2.0.0+incompatible
-	github.com/nyaruka/gocommon v1.15.1
+	github.com/gomodule/redigo v1.8.8
+	github.com/nyaruka/gocommon v1.5.3
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.7.0
 )
