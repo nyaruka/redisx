@@ -39,6 +39,14 @@ func Get(t *testing.T, rp *redis.Pool, key string, expected string, msgAndArgs .
 	assert.Equal(t, expected, actual, msgAndArgs...)
 }
 
+// SCard asserts the result of calling SCard on the given key
+func SCard(t *testing.T, rp *redis.Pool, key string, expected int, msgAndArgs ...interface{}) {
+	actual, err := redis.Int(do(rp, "SCARD", key))
+
+	assert.NoError(t, err)
+	assert.Equal(t, expected, actual, msgAndArgs...)
+}
+
 // SMembers asserts the result of calling SMembers on the given key
 func SMembers(t *testing.T, rp *redis.Pool, key string, expected []string, msgAndArgs ...interface{}) {
 	actual, err := redis.Strings(do(rp, "SMEMBERS", key))
@@ -50,6 +58,14 @@ func SMembers(t *testing.T, rp *redis.Pool, key string, expected []string, msgAn
 // HGetAll asserts the result of calling HGETALL on the given key
 func HGetAll(t *testing.T, rp *redis.Pool, key string, expected map[string]string, msgAndArgs ...interface{}) {
 	actual, err := redis.StringMap(do(rp, "HGETALL", key))
+
+	assert.NoError(t, err)
+	assert.Equal(t, expected, actual, msgAndArgs...)
+}
+
+// ZCard asserts the result of calling ZCARD on the given key
+func ZCard(t *testing.T, rp *redis.Pool, key string, expected int, msgAndArgs ...interface{}) {
+	actual, err := redis.Int(do(rp, "ZCARD", key))
 
 	assert.NoError(t, err)
 	assert.Equal(t, expected, actual, msgAndArgs...)
