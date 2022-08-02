@@ -1,3 +1,7 @@
+v0.2.2
+----------
+ * Add assertredis.HLen and LLen
+
 v0.2.1
 ----------
  * Switch from retracted redigo release to latest
