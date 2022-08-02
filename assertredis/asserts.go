@@ -63,6 +63,22 @@ func HGetAll(t *testing.T, rp *redis.Pool, key string, expected map[string]strin
 	assert.Equal(t, expected, actual, msgAndArgs...)
 }
 
+// HLen asserts the result of calling HLEN on the given key
+func HLen(t *testing.T, rp *redis.Pool, key string, expected int, msgAndArgs ...interface{}) {
+	actual, err := redis.Int(do(rp, "HLEN", key))
+
+	assert.NoError(t, err)
+	assert.Equal(t, expected, actual, msgAndArgs...)
+}
+
+// LLen asserts the result of calling LLEN on the given key
+func LLen(t *testing.T, rp *redis.Pool, key string, expected int, msgAndArgs ...interface{}) {
+	actual, err := redis.Int(do(rp, "LLEN", key))
+
+	assert.NoError(t, err)
+	assert.Equal(t, expected, actual, msgAndArgs...)
+}
+
 // ZCard asserts the result of calling ZCARD on the given key
 func ZCard(t *testing.T, rp *redis.Pool, key string, expected int, msgAndArgs ...interface{}) {
 	actual, err := redis.Int(do(rp, "ZCARD", key))
