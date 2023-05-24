@@ -48,8 +48,8 @@ func SCard(t *testing.T, rp *redis.Pool, key string, expected int, msgAndArgs ..
 }
 
 // SIsMember asserts the result of calling SISMEMBER on the given key
-func SIsMember(t *testing.T, rp *redis.Pool, key string, expected bool, msgAndArgs ...interface{}) {
-	actual, err := redis.Bool(do(rp, "SISMEMBER", key))
+func SIsMember(t *testing.T, rp *redis.Pool, key, member string, expected bool, msgAndArgs ...interface{}) {
+	actual, err := redis.Bool(do(rp, "SISMEMBER", key, member))
 
 	assert.NoError(t, err)
 	assert.Equal(t, expected, actual, msgAndArgs...)
