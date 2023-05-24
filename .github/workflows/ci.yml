@@ -3,21 +3,24 @@ on: [push, pull_request]
 jobs:
   test:
     name: Test
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:6.2-alpine
+        ports:
+          - 6379:6379
+
     strategy:
       matrix:
-        go-version: [1.16.x, 1.17.x]
-    runs-on: ubuntu-latest
+        go-version: [1.19.x, 1.20.x]
+
     steps:
     - name: Checkout code
-      uses: actions/checkout@v1
-
-    - name: Install Redis
-      uses: zhulik/redis-action@v1.0.0
-      with:
-        redis version: '5'
+      uses: actions/checkout@v3
 
     - name: Install Go
-      uses: actions/setup-go@v1
+      uses: actions/setup-go@v3
       with:
         go-version: ${{ matrix.go-version }}
 
@@ -26,6 +29,6 @@ jobs:
 
     - name: Upload coverage
       if: success()
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v3
       with:
         fail_ci_if_error: true
