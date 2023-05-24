@@ -1,3 +1,8 @@
+v0.3.0 (2023-05-24)
+-------------------------
+ * Update dependencies
+ * Add assertredis.SIsMember
+
 v0.2.2
 ----------
  * Add assertredis.HLen and LLen
