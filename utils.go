@@ -38,6 +38,10 @@ func StringsWithScores(reply interface{}, err error) ([]string, []float64, error
 
 func intervalTimestamp(t time.Time, interval time.Duration) string {
 	t = t.UTC().Truncate(interval)
+
+	if interval < time.Minute {
+		return t.Format("2006-01-02T15:04:05")
+	}
 	if interval < time.Hour*24 {
 		return t.Format("2006-01-02T15:04")
 	}

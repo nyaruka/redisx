@@ -114,4 +114,16 @@ func TestIntervalHash(t *testing.T) {
 	assertGet(cache2, "A", "1")
 	assertGet(cache2, "B", "2")
 	assertGet(cache2, "C", "")
+
+	// create a 5 second x 2 based set
+	cache3 := redisx.NewIntervalHash("foos", time.Second*5, 2)
+	cache3.Set(rc, "A", "1")
+	cache3.Set(rc, "B", "2")
+
+	assertredis.HGetAll(t, rp, "foos:2021-11-20T12:07:00", map[string]string{"A": "1", "B": "2"})
+	assertredis.HGetAll(t, rp, "foos:2021-11-20T12:06:55", map[string]string{})
+
+	assertGet(cache3, "A", "1")
+	assertGet(cache3, "B", "2")
+	assertGet(cache3, "C", "")
 }

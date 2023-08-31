@@ -108,7 +108,7 @@ func TestIntervalSet(t *testing.T) {
 	assertNotContains(marker1, "F")
 	assertNotContains(marker1, "G")
 
-	// create a 5 minute x 3 based marker
+	// create a 5 minute x 3 based set
 	marker2 := redisx.NewIntervalSet("foos", time.Minute*5, 3)
 	marker2.Add(rc, "A")
 	marker2.Add(rc, "B")
@@ -119,4 +119,16 @@ func TestIntervalSet(t *testing.T) {
 	assertContains(marker2, "A")
 	assertContains(marker2, "B")
 	assertNotContains(marker2, "C")
+
+	// create a 5 second x 2 based set
+	marker3 := redisx.NewIntervalSet("foos", time.Second*5, 2)
+	marker3.Add(rc, "A")
+	marker3.Add(rc, "B")
+
+	assertredis.SMembers(t, rp, "foos:2021-11-20T12:07:00", []string{"A", "B"})
+	assertredis.SMembers(t, rp, "foos:2021-11-20T12:06:55", []string{})
+
+	assertContains(marker3, "A")
+	assertContains(marker3, "B")
+	assertNotContains(marker3, "C")
 }
