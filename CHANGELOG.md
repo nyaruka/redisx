@@ -1,3 +1,10 @@
+v0.4.0 (2023-08-31)
+-------------------------
+ * Improve redis asserts so they return the equality result
+ * Add pattern arg to assertredis.Keys
+ * Add assertredis.HGet 
+ * Properly support sub minute interval times
+
 v0.3.1 (2023-05-24)
 -------------------------
  * Fix assertredis.SIsMember
