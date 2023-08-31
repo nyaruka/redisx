@@ -11,7 +11,7 @@ import (
 )
 
 // StringsWithScores parses an array reply which is alternating pairs of strings and scores (floats)
-func StringsWithScores(reply interface{}, err error) ([]string, []float64, error) {
+func StringsWithScores(reply any, err error) ([]string, []float64, error) {
 	pairs, err := redis.Values(reply, err)
 	if err != nil {
 		return nil, nil, err
