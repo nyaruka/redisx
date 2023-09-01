@@ -32,21 +32,21 @@ func TestIntervalSet(t *testing.T) {
 	assertredis.SMembers(t, rp, "foos:2021-11-18", []string{"A", "B", "C"})
 	assertredis.SMembers(t, rp, "foos:2021-11-17", []string{})
 
-	assertContains := func(s *redisx.IntervalSet, v string) {
+	assertIsMember := func(s *redisx.IntervalSet, v string) {
 		contains, err := s.IsMember(rc, v)
 		assert.NoError(t, err)
 		assert.True(t, contains, "expected marker to contain %s", v)
 	}
-	assertNotContains := func(s *redisx.IntervalSet, v string) {
+	assertNotIsMember := func(s *redisx.IntervalSet, v string) {
 		contains, err := s.IsMember(rc, v)
 		assert.NoError(t, err)
 		assert.False(t, contains, "expected marker to not contain %s", v)
 	}
 
-	assertContains(set1, "A")
-	assertContains(set1, "B")
-	assertContains(set1, "C")
-	assertNotContains(set1, "D")
+	assertIsMember(set1, "A")
+	assertIsMember(set1, "B")
+	assertIsMember(set1, "C")
+	assertNotIsMember(set1, "D")
 
 	// move forward a day..
 	setNow(time.Date(2021, 11, 19, 12, 0, 3, 234567, time.UTC))
@@ -58,12 +58,12 @@ func TestIntervalSet(t *testing.T) {
 	assertredis.SMembers(t, rp, "foos:2021-11-18", []string{"A", "B", "C"})
 	assertredis.SMembers(t, rp, "foos:2021-11-17", []string{})
 
-	assertContains(set1, "A")
-	assertContains(set1, "B")
-	assertContains(set1, "C")
-	assertContains(set1, "D")
-	assertContains(set1, "E")
-	assertNotContains(set1, "F")
+	assertIsMember(set1, "A")
+	assertIsMember(set1, "B")
+	assertIsMember(set1, "C")
+	assertIsMember(set1, "D")
+	assertIsMember(set1, "E")
+	assertNotIsMember(set1, "F")
 
 	// move forward again..
 	setNow(time.Date(2021, 11, 20, 12, 7, 3, 234567, time.UTC))
@@ -76,13 +76,13 @@ func TestIntervalSet(t *testing.T) {
 	assertredis.SMembers(t, rp, "foos:2021-11-18", []string{"A", "B", "C"})
 	assertredis.SMembers(t, rp, "foos:2021-11-17", []string{})
 
-	assertNotContains(set1, "A") // too old
-	assertNotContains(set1, "B") // too old
-	assertNotContains(set1, "C") // too old
-	assertContains(set1, "D")
-	assertContains(set1, "E")
-	assertContains(set1, "F")
-	assertContains(set1, "G")
+	assertNotIsMember(set1, "A") // too old
+	assertNotIsMember(set1, "B") // too old
+	assertNotIsMember(set1, "C") // too old
+	assertIsMember(set1, "D")
+	assertIsMember(set1, "E")
+	assertIsMember(set1, "F")
+	assertIsMember(set1, "G")
 
 	err := set1.Rem(rc, "F") // from today
 	require.NoError(t, err)
@@ -92,10 +92,10 @@ func TestIntervalSet(t *testing.T) {
 	assertredis.SMembers(t, rp, "foos:2021-11-20", []string{"G"})
 	assertredis.SMembers(t, rp, "foos:2021-11-19", []string{"D"})
 
-	assertContains(set1, "D")
-	assertNotContains(set1, "E")
-	assertNotContains(set1, "F")
-	assertContains(set1, "G")
+	assertIsMember(set1, "D")
+	assertNotIsMember(set1, "E")
+	assertNotIsMember(set1, "F")
+	assertIsMember(set1, "G")
 
 	err = set1.Clear(rc)
 	require.NoError(t, err)
@@ -103,10 +103,10 @@ func TestIntervalSet(t *testing.T) {
 	assertredis.SMembers(t, rp, "foos:2021-11-20", []string{})
 	assertredis.SMembers(t, rp, "foos:2021-11-19", []string{})
 
-	assertNotContains(set1, "D")
-	assertNotContains(set1, "E")
-	assertNotContains(set1, "F")
-	assertNotContains(set1, "G")
+	assertNotIsMember(set1, "D")
+	assertNotIsMember(set1, "E")
+	assertNotIsMember(set1, "F")
+	assertNotIsMember(set1, "G")
 
 	// create a 5 minute x 3 based set
 	set2 := redisx.NewIntervalSet("foos", time.Minute*5, 3)
@@ -116,9 +116,9 @@ func TestIntervalSet(t *testing.T) {
 	assertredis.SMembers(t, rp, "foos:2021-11-20T12:05", []string{"A", "B"})
 	assertredis.SMembers(t, rp, "foos:2021-11-20T12:00", []string{})
 
-	assertContains(set2, "A")
-	assertContains(set2, "B")
-	assertNotContains(set2, "C")
+	assertIsMember(set2, "A")
+	assertIsMember(set2, "B")
+	assertNotIsMember(set2, "C")
 
 	// create a 5 second x 2 based set
 	set3 := redisx.NewIntervalSet("foos", time.Second*5, 2)
@@ -128,7 +128,7 @@ func TestIntervalSet(t *testing.T) {
 	assertredis.SMembers(t, rp, "foos:2021-11-20T12:07:00", []string{"A", "B"})
 	assertredis.SMembers(t, rp, "foos:2021-11-20T12:06:55", []string{})
 
-	assertContains(set3, "A")
-	assertContains(set3, "B")
-	assertNotContains(set3, "C")
+	assertIsMember(set3, "A")
+	assertIsMember(set3, "B")
+	assertNotIsMember(set3, "C")
 }

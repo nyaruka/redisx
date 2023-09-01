@@ -4,14 +4,14 @@ redisx is a library of Go utilities built on the [redigo](github.com/gomodule/re
 
 ## IntervalSet
 
-Creating very large numbers of Redis keys can hurt performance, but putting them all in a single set requires that they all have the same expiration. Marker is a way to have multiple sets based on time intervals, accessible like a single set. You trade accuracy of expiry times for a significantly reduced key space. For example using 2 intervals of 24 hours:
+Creating very large numbers of Redis keys can hurt performance, but putting them all in a single set requires that they all have the same expiration. `IntervalSet` is a way to have multiple sets based on time intervals, accessible like a single set. You trade accuracy of expiry times for a significantly reduced key space. For example using 2 intervals of 24 hours:
 
 ```go
-marker := NewIntervalSet("foos", time.Hour*24, 2)
-marker.Add(rc, "A")  // time is 2021-12-02T09:00
+set := NewIntervalSet("foos", time.Hour*24, 2)
+set.Add(rc, "A")  // time is 2021-12-02T09:00
 ...
-marker.Add(rc, "B")  // time is 2021-12-03T10:00
-marker.Add(rc, "C")  // time is 2021-12-03T11:00
+set.Add(rc, "B")  // time is 2021-12-03T10:00
+set.Add(rc, "C")  // time is 2021-12-03T11:00
 ```
 
 Creates 2 Redis sets like:
@@ -24,9 +24,9 @@ foos:2021-12-03 => {"B", "C"}  // expires at 2021-12-05T11:00
 But can be accessed like a single set:
 
 ```go
-marker.Contains(rc, "A")   // true
-marker.Contains(rc, "B")   // true
-marker.Contains(rc, "D")   // false
+set.IsMember(rc, "A")   // true
+set.IsMember(rc, "B")   // true
+set.IsMember(rc, "D")   // false
 ```
 
 ## IntervalHash
@@ -34,11 +34,11 @@ marker.Contains(rc, "D")   // false
 Same idea as `IntervalSet` but for hashes, and works well for caching values. For example using 2 intervals of 1 hour:
 
 ```go
-cache := NewIntervalHash("foos", time.Hour, 2)
-cache.Set(rc, "A", "1")  // time is 2021-12-02T09:10
+hash := NewIntervalHash("foos", time.Hour, 2)
+hash.Set(rc, "A", "1")  // time is 2021-12-02T09:10
 ...
-cache.Set(rc, "B", "2")  // time is 2021-12-02T10:15
-cache.Set(rc, "C", "3")  // time is 2021-12-02T10:20
+hash.Set(rc, "B", "2")  // time is 2021-12-02T10:15
+hash.Set(rc, "C", "3")  // time is 2021-12-02T10:20
 ```
 
 Creates 2 Redis hashes like:
@@ -51,9 +51,9 @@ foos:2021-12-02T10:00 => {"B": "2", "C": "3"}  // expires at 2021-12-02T12:20
 But can be accessed like a single hash:
 
 ```go
-cache.Get(rc, "A")   // "1"
-cache.Get(rc, "B")   // "2"
-cache.Get(rc, "D")   // ""
+hash.Get(rc, "A")   // "1"
+hash.Get(rc, "B")   // "2"
+hash.Get(rc, "D")   // ""
 ```
 
 ## IntervalSeries
@@ -111,7 +111,7 @@ The `assertredis` package contains several asserts useful for testing the state 
 ```go
 rp := assertredis.TestDB()
 
-assertredis.Keys(t, rp, []string{"foo", "bar"})
+assertredis.Keys(t, rp, "*", []string{"foo", "bar"})
 assertredis.Get(t, rp, "foo", "123")
 assertredis.SMembers(t, rp, "foo_set", []string{"123", "234"})
 ```
