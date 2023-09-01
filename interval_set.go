@@ -1,6 +1,7 @@
 package redisx
 
 import (
+	_ "embed"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
@@ -18,18 +19,9 @@ func NewIntervalSet(keyBase string, interval time.Duration, size int) *IntervalS
 	return &IntervalSet{keyBase: keyBase, interval: interval, size: size}
 }
 
-var isetContainsScript = redis.NewScript(-1, `
-local member = ARGV[1]
-
-for _, key in ipairs(KEYS) do
-	local found = redis.call("SISMEMBER", key, member)
-	if found == 1 then
-		return 1
-	end
-end
-
-return 0
-`)
+//go:embed lua/iset_contains.lua
+var isetContains string
+var isetContainsScript = redis.NewScript(-1, isetContains)
 
 // Contains returns whether we contain the given value
 func (s *IntervalSet) Contains(rc redis.Conn, member string) (bool, error) {

@@ -1,6 +1,7 @@
 package redisx
 
 import (
+	_ "embed"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
@@ -18,18 +19,9 @@ func NewIntervalHash(keyBase string, interval time.Duration, size int) *Interval
 	return &IntervalHash{keyBase: keyBase, interval: interval, size: size}
 }
 
-var ihashGetScript = redis.NewScript(-1, `
-local field = ARGV[1]
-
-for _, key in ipairs(KEYS) do
-	local value = redis.call("HGET", key, field)
-	if (value ~= false) then
-		return value
-	end
-end
-
-return false
-`)
+//go:embed lua/ihash_get.lua
+var ihashGet string
+var ihashGetScript = redis.NewScript(-1, ihashGet)
 
 // Get returns the value of the given field
 func (h *IntervalHash) Get(rc redis.Conn, field string) (string, error) {
