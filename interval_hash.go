@@ -66,11 +66,11 @@ func (h *IntervalHash) Set(rc redis.Conn, field, value string) error {
 	return err
 }
 
-// Del removes the given field
-func (h *IntervalHash) Del(rc redis.Conn, field string) error {
+// Del removes the given fields
+func (h *IntervalHash) Del(rc redis.Conn, fields ...string) error {
 	rc.Send("MULTI")
 	for _, k := range h.keys() {
-		rc.Send("HDEL", k, field)
+		rc.Send("HDEL", redis.Args{}.Add(k).AddFlat(fields)...)
 	}
 	_, err := rc.Do("EXEC")
 	return err

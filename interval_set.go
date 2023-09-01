@@ -41,11 +41,11 @@ func (s *IntervalSet) Add(rc redis.Conn, member string) error {
 	return err
 }
 
-// Rem removes the given value
-func (s *IntervalSet) Rem(rc redis.Conn, member string) error {
+// Rem removes the given values
+func (s *IntervalSet) Rem(rc redis.Conn, members ...string) error {
 	rc.Send("MULTI")
 	for _, k := range s.keys() {
-		rc.Send("SREM", k, member)
+		rc.Send("SREM", redis.Args{}.Add(k).AddFlat(members)...)
 	}
 	_, err := rc.Do("EXEC")
 	return err
