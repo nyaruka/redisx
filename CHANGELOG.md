@@ -1,3 +1,10 @@
+v0.5.0 (2023-09-01)
+-------------------------
+ * Test on go 1.21
+ * Tweak IntervalHash.Del and IntervalSet.Rem to support removing multiple keys like HDEL and SREM
+ * Tweak method naming to be closer to the underlying redis commands
+ * Implement MGET for interval hashes
+
 v0.4.0 (2023-08-31)
 -------------------------
  * Improve redis asserts so they return the equality result
