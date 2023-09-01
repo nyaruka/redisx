@@ -2,6 +2,7 @@ package redisx
 
 import (
 	_ "embed"
+	"errors"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
@@ -30,6 +31,26 @@ func (h *IntervalHash) Get(rc redis.Conn, field string) (string, error) {
 	value, err := redis.String(ihashGetScript.Do(rc, redis.Args{}.Add(len(keys)).AddFlat(keys).Add(field)...))
 	if err != nil && err != redis.ErrNil {
 		return "", err
+	}
+	return value, nil
+}
+
+//go:embed lua/ihash_mget.lua
+var ihashMGet string
+var ihashMGetScript = redis.NewScript(-1, ihashMGet)
+
+// MGet returns the values of the given fields
+func (h *IntervalHash) MGet(rc redis.Conn, fields ...string) ([]string, error) {
+	keys := h.keys()
+
+	// for consistency with HMGET, zero fields is an error
+	if len(fields) == 0 {
+		return nil, errors.New("wrong number of arguments for command")
+	}
+
+	value, err := redis.Strings(ihashMGetScript.Do(rc, redis.Args{}.Add(len(keys)).AddFlat(keys).AddFlat(fields)...))
+	if err != nil && err != redis.ErrNil {
+		return nil, err
 	}
 	return value, nil
 }

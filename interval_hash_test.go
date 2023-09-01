@@ -1,6 +1,7 @@
 package redisx_test
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -26,7 +27,12 @@ func TestIntervalHash(t *testing.T) {
 	assertGet := func(h *redisx.IntervalHash, k, expected string) {
 		actual, err := h.Get(rc, k)
 		assert.NoError(t, err, "unexpected error getting key %s", k)
-		assert.Equal(t, expected, actual, "expected cache key %s to contain %s", k, expected)
+		assert.Equal(t, expected, actual, "expected hash key %s to contain %s", k, expected)
+	}
+	assertMGet := func(h *redisx.IntervalHash, ks []string, expected []string) {
+		actual, err := h.MGet(rc, ks...)
+		assert.NoError(t, err, "unexpected error getting keys %s", strings.Join(ks, ","))
+		assert.Equal(t, expected, actual, "expected hash keys %s to contain %s", strings.Join(ks, ","), strings.Join(expected, ","))
 	}
 
 	// create a 24-hour x 2 based hash
@@ -42,6 +48,11 @@ func TestIntervalHash(t *testing.T) {
 	assertGet(cache1, "B", "2")
 	assertGet(cache1, "C", "3")
 	assertGet(cache1, "D", "")
+	assertMGet(cache1, []string{"A", "C", "D"}, []string{"1", "3", ""})
+	assertMGet(cache1, []string{"D", "A"}, []string{"", "1"})
+
+	_, err := cache1.MGet(rc) // zero fields is an error
+	assert.EqualError(t, err, "wrong number of arguments for command")
 
 	// move forward a day..
 	setNow(time.Date(2021, 11, 19, 12, 7, 3, 234567, time.UTC))
@@ -57,6 +68,8 @@ func TestIntervalHash(t *testing.T) {
 	assertGet(cache1, "B", "6")
 	assertGet(cache1, "C", "3")
 	assertGet(cache1, "D", "")
+	assertMGet(cache1, []string{"A", "C", "D"}, []string{"5", "3", ""})
+	assertMGet(cache1, []string{"B"}, []string{"6"})
 
 	// move forward again..
 	setNow(time.Date(2021, 11, 20, 12, 7, 3, 234567, time.UTC))
@@ -74,8 +87,9 @@ func TestIntervalHash(t *testing.T) {
 	assertGet(cache1, "B", "6")
 	assertGet(cache1, "C", "") // too old
 	assertGet(cache1, "D", "")
+	assertMGet(cache1, []string{"B", "A", "D"}, []string{"6", "7", ""})
 
-	err := cache1.Remove(rc, "A") // from today and yesterday
+	err = cache1.Remove(rc, "A") // from today and yesterday
 	require.NoError(t, err)
 	err = cache1.Remove(rc, "B") // from yesterday
 	require.NoError(t, err)
