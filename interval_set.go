@@ -19,15 +19,15 @@ func NewIntervalSet(keyBase string, interval time.Duration, size int) *IntervalS
 	return &IntervalSet{keyBase: keyBase, interval: interval, size: size}
 }
 
-//go:embed lua/iset_contains.lua
-var isetContains string
-var isetContainsScript = redis.NewScript(-1, isetContains)
+//go:embed lua/iset_ismember.lua
+var isetIsMember string
+var isetIsMemberScript = redis.NewScript(-1, isetIsMember)
 
-// Contains returns whether we contain the given value
-func (s *IntervalSet) Contains(rc redis.Conn, member string) (bool, error) {
+// IsMember returns whether we contain the given value
+func (s *IntervalSet) IsMember(rc redis.Conn, member string) (bool, error) {
 	keys := s.keys()
 
-	return redis.Bool(isetContainsScript.Do(rc, redis.Args{}.Add(len(keys)).AddFlat(keys).Add(member)...))
+	return redis.Bool(isetIsMemberScript.Do(rc, redis.Args{}.Add(len(keys)).AddFlat(keys).Add(member)...))
 }
 
 // Add adds the given value
@@ -41,8 +41,8 @@ func (s *IntervalSet) Add(rc redis.Conn, member string) error {
 	return err
 }
 
-// Remove removes the given value
-func (s *IntervalSet) Remove(rc redis.Conn, member string) error {
+// Rem removes the given value
+func (s *IntervalSet) Rem(rc redis.Conn, member string) error {
 	rc.Send("MULTI")
 	for _, k := range s.keys() {
 		rc.Send("SREM", k, member)
@@ -51,8 +51,8 @@ func (s *IntervalSet) Remove(rc redis.Conn, member string) error {
 	return err
 }
 
-// ClearAll removes all values
-func (s *IntervalSet) ClearAll(rc redis.Conn) error {
+// Clear removes all values
+func (s *IntervalSet) Clear(rc redis.Conn) error {
 	rc.Send("MULTI")
 	for _, k := range s.keys() {
 		rc.Send("DEL", k)

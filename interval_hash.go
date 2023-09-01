@@ -66,8 +66,8 @@ func (h *IntervalHash) Set(rc redis.Conn, field, value string) error {
 	return err
 }
 
-// Remove removes the given field
-func (h *IntervalHash) Remove(rc redis.Conn, field string) error {
+// Del removes the given field
+func (h *IntervalHash) Del(rc redis.Conn, field string) error {
 	rc.Send("MULTI")
 	for _, k := range h.keys() {
 		rc.Send("HDEL", k, field)
@@ -76,8 +76,8 @@ func (h *IntervalHash) Remove(rc redis.Conn, field string) error {
 	return err
 }
 
-// ClearAll removes all values
-func (h *IntervalHash) ClearAll(rc redis.Conn) error {
+// Clear removes all fields
+func (h *IntervalHash) Clear(rc redis.Conn) error {
 	rc.Send("MULTI")
 	for _, k := range h.keys() {
 		rc.Send("DEL", k)
