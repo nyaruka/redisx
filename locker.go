@@ -1,6 +1,7 @@
 package redisx
 
 import (
+	_ "embed"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
@@ -49,15 +50,9 @@ func (l *Locker) Grab(rp *redis.Pool, retry time.Duration) (string, error) {
 	return value, nil
 }
 
-var releaseScript = redis.NewScript(1, `
-local lockKey, lockValue = KEYS[1], ARGV[1]
-
-if redis.call("GET", lockKey) == lockValue then
-	return redis.call("DEL", lockKey)
-else
-	return 0
-end
-`)
+//go:embed lua/locker_release.lua
+var lockerRelease string
+var lockerReleaseScript = redis.NewScript(1, lockerRelease)
 
 // Release releases this lock if the given lock value is correct (i.e we own this lock). It is not an
 // error to release a lock that is no longer present.
@@ -66,19 +61,13 @@ func (l *Locker) Release(rp *redis.Pool, value string) error {
 	defer rc.Close()
 
 	// we use lua here because we only want to release the lock if we own it
-	_, err := releaseScript.Do(rc, l.key, value)
+	_, err := lockerReleaseScript.Do(rc, l.key, value)
 	return err
 }
 
-var expireScript = redis.NewScript(1, `
-local lockKey, lockValue, lockExpire = KEYS[1], ARGV[1], ARGV[2]
-
-if redis.call("GET", lockKey) == lockValue then
-	return redis.call("EXPIRE", lockKey, lockExpire)
-else
-	return 0
-end
-`)
+//go:embed lua/locker_extend.lua
+var lockerExtend string
+var lockerExtendScript = redis.NewScript(1, lockerExtend)
 
 // Extend extends our lock expiration by the passed in number of seconds provided the lock value is correct
 func (l *Locker) Extend(rp *redis.Pool, value string, expiration time.Duration) error {
@@ -88,6 +77,6 @@ func (l *Locker) Extend(rp *redis.Pool, value string, expiration time.Duration) 
 	seconds := int(expiration / time.Second) // convert our expiration to seconds
 
 	// we use lua here because we only want to set the expiration time if we own it
-	_, err := expireScript.Do(rc, l.key, value, seconds)
+	_, err := lockerExtendScript.Do(rc, l.key, value, seconds)
 	return err
 }

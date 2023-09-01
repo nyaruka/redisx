@@ -1,6 +1,7 @@
 package redisx
 
 import (
+	_ "embed"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
@@ -29,16 +30,9 @@ func (s *IntervalSeries) Record(rc redis.Conn, field string, value int64) error 
 	return err
 }
 
-var iseriesGetScript = redis.NewScript(-1, `
-local field = ARGV[1]
-
-local values = {}
-for _, key in ipairs(KEYS) do
-	table.insert(values, redis.call("HGET", key, field))
-end
-
-return values
-`)
+//go:embed lua/iseries_get.lua
+var iseriesGet string
+var iseriesGetScript = redis.NewScript(-1, iseriesGet)
 
 // Get gets the values of field in all intervals
 func (s *IntervalSeries) Get(rc redis.Conn, field string) ([]int64, error) {
