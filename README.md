@@ -2,6 +2,20 @@
 
 redisx is a library of Go utilities built on the [redigo](github.com/gomodule/redigo) redis client library.
 
+## NewPool
+
+Simplifies creating a new Redis connection pool, with optional auth, and tests that connection works:
+
+```go
+rp, err = redisx.NewPool(
+    "redis://username:password@localhost:6379/15", 
+    redisx.WithMaxActive(10), 
+    redisx.WithMaxIdle(3), 
+    redisx.WithIdleTimeout(time.Minute)
+)
+assert.NoError(t, err)
+```
+
 ## IntervalSet
 
 Creating very large numbers of Redis keys can hurt performance, but putting them all in a single set requires that they all have the same expiration. `IntervalSet` is a way to have multiple sets based on time intervals, accessible like a single set. You trade accuracy of expiry times for a significantly reduced key space. For example using 2 intervals of 24 hours:
