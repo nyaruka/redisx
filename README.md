@@ -4,16 +4,15 @@ redisx is a library of Go utilities built on the [redigo](github.com/gomodule/re
 
 ## NewPool
 
-Simplifies creating a new Redis connection pool, with optional auth, and tests that connection works:
+Simplifies creating a new Redis connection pool, with optional auth, and tests that the connection works:
 
 ```go
-rp, err = redisx.NewPool(
+rp, err := redisx.NewPool(
     "redis://username:password@localhost:6379/15", 
     redisx.WithMaxActive(10), 
     redisx.WithMaxIdle(3), 
     redisx.WithIdleTimeout(time.Minute)
 )
-assert.NoError(t, err)
 ```
 
 ## IntervalSet
