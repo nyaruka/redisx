@@ -95,6 +95,14 @@ func LLen(t *testing.T, rp *redis.Pool, key string, expected int, msgAndArgs ...
 	return assert.Equal(t, expected, actual, msgAndArgs...)
 }
 
+// LRange asserts the result of calling LRANGE on the given key
+func LRange(t *testing.T, rp *redis.Pool, key string, start, stop, expected int, msgAndArgs ...any) bool {
+	actual, err := redis.Strings(do(rp, "LRANGE", key, start, stop))
+
+	assert.NoError(t, err)
+	return assert.Equal(t, expected, actual, msgAndArgs...)
+}
+
 // ZCard asserts the result of calling ZCARD on the given key
 func ZCard(t *testing.T, rp *redis.Pool, key string, expected int, msgAndArgs ...any) bool {
 	actual, err := redis.Int(do(rp, "ZCARD", key))
