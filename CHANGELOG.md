@@ -1,3 +1,7 @@
+v0.6.3 (2024-01-30)
+-------------------------
+ * Fix assertrange.LRange expected type
+
 v0.6.2 (2024-01-30)
 -------------------------
  * Add assertredis.LRange
