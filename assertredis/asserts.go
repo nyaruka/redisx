@@ -104,8 +104,16 @@ func ZCard(t *testing.T, rp *redis.Pool, key string, expected int, msgAndArgs ..
 }
 
 // ZRange asserts the result of calling ZRANGE on the given key
-func ZRange(t *testing.T, rp *redis.Pool, key string, min, max int, expected []string, msgAndArgs ...any) bool {
+func ZRange(t *testing.T, rp *redis.Pool, key string, min, max float64, expected []string, msgAndArgs ...any) bool {
 	actual, err := redis.Strings(do(rp, "ZRANGE", key, min, max))
+
+	assert.NoError(t, err)
+	return assert.Equal(t, expected, actual, msgAndArgs...)
+}
+
+// ZRange asserts the result of calling ZScore on the given key
+func ZScore(t *testing.T, rp *redis.Pool, key, member string, expected float64, msgAndArgs ...any) bool {
+	actual, err := redis.Float64(do(rp, "ZSCORE", key, member))
 
 	assert.NoError(t, err)
 	return assert.Equal(t, expected, actual, msgAndArgs...)
