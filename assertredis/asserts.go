@@ -96,7 +96,7 @@ func LLen(t *testing.T, rp *redis.Pool, key string, expected int, msgAndArgs ...
 }
 
 // LRange asserts the result of calling LRANGE on the given key
-func LRange(t *testing.T, rp *redis.Pool, key string, start, stop, expected int, msgAndArgs ...any) bool {
+func LRange(t *testing.T, rp *redis.Pool, key string, start, stop, expected []string, msgAndArgs ...any) bool {
 	actual, err := redis.Strings(do(rp, "LRANGE", key, start, stop))
 
 	assert.NoError(t, err)
