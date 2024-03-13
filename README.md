@@ -123,8 +123,13 @@ The `assertredis` package contains several asserts useful for testing the state 
 
 ```go
 rp := assertredis.TestDB()
+rc := rp.Get()
+defer rc.Close()
 
-assertredis.Keys(t, rp, "*", []string{"foo", "bar"})
-assertredis.Get(t, rp, "foo", "123")
-assertredis.SMembers(t, rp, "foo_set", []string{"123", "234"})
+assertredis.Keys(t, rc, "*", []string{"foo", "bar"})
+assertredis.Exists(t, rc, "foo")
+assertredis.NotExists(t, rc, "bar")
+assertredis.Get(t, rc, "foo", "123")
+assertredis.SCard(t, rc, "foo_set", 2)
+assertredis.SMembers(t, rc, "foo_set", []string{"123", "234"})
 ```
