@@ -11,6 +11,8 @@ import (
 
 func TestLocker(t *testing.T) {
 	rp := assertredis.TestDB()
+	rc := rp.Get()
+	defer rc.Close()
 
 	defer assertredis.FlushDB()
 
@@ -21,7 +23,7 @@ func TestLocker(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotZero(t, lock1)
 
-	assertredis.Exists(t, rp, "test")
+	assertredis.Exists(t, rc, "test")
 
 	// try to acquire the same lock, should fail
 	lock2, err := locker.Grab(rp, time.Second)
@@ -48,18 +50,18 @@ func TestLocker(t *testing.T) {
 	assert.NoError(t, err)
 
 	// no error but also dooesn't release the lock
-	assertredis.Exists(t, rp, "test")
+	assertredis.Exists(t, rc, "test")
 
 	// release the lock
 	err = locker.Release(rp, lock3)
 	assert.NoError(t, err)
 
-	assertredis.NotExists(t, rp, "test")
+	assertredis.NotExists(t, rc, "test")
 
 	// new grab should work
 	lock5, err := locker.Grab(rp, time.Second*5)
 	assert.NoError(t, err)
 	assert.NotZero(t, lock5)
 
-	assertredis.Exists(t, rp, "test")
+	assertredis.Exists(t, rc, "test")
 }

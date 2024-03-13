@@ -41,8 +41,8 @@ func TestIntervalHash(t *testing.T) {
 	assert.NoError(t, hash1.Set(rc, "B", "2"))
 	assert.NoError(t, hash1.Set(rc, "C", "3"))
 
-	assertredis.HGetAll(t, rp, "foos:2021-11-18", map[string]string{"A": "1", "B": "2", "C": "3"})
-	assertredis.HGetAll(t, rp, "foos:2021-11-17", map[string]string{})
+	assertredis.HGetAll(t, rc, "foos:2021-11-18", map[string]string{"A": "1", "B": "2", "C": "3"})
+	assertredis.HGetAll(t, rc, "foos:2021-11-17", map[string]string{})
 
 	assertGet(hash1, "A", "1")
 	assertGet(hash1, "B", "2")
@@ -60,9 +60,9 @@ func TestIntervalHash(t *testing.T) {
 	hash1.Set(rc, "A", "5")
 	hash1.Set(rc, "B", "6")
 
-	assertredis.HGetAll(t, rp, "foos:2021-11-19", map[string]string{"A": "5", "B": "6"})
-	assertredis.HGetAll(t, rp, "foos:2021-11-18", map[string]string{"A": "1", "B": "2", "C": "3"})
-	assertredis.HGetAll(t, rp, "foos:2021-11-17", map[string]string{})
+	assertredis.HGetAll(t, rc, "foos:2021-11-19", map[string]string{"A": "5", "B": "6"})
+	assertredis.HGetAll(t, rc, "foos:2021-11-18", map[string]string{"A": "1", "B": "2", "C": "3"})
+	assertredis.HGetAll(t, rc, "foos:2021-11-17", map[string]string{})
 
 	assertGet(hash1, "A", "5")
 	assertGet(hash1, "B", "6")
@@ -77,10 +77,10 @@ func TestIntervalHash(t *testing.T) {
 	hash1.Set(rc, "A", "7")
 	hash1.Set(rc, "Z", "9")
 
-	assertredis.HGetAll(t, rp, "foos:2021-11-20", map[string]string{"A": "7", "Z": "9"})
-	assertredis.HGetAll(t, rp, "foos:2021-11-19", map[string]string{"A": "5", "B": "6"})
-	assertredis.HGetAll(t, rp, "foos:2021-11-18", map[string]string{"A": "1", "B": "2", "C": "3"})
-	assertredis.HGetAll(t, rp, "foos:2021-11-17", map[string]string{})
+	assertredis.HGetAll(t, rc, "foos:2021-11-20", map[string]string{"A": "7", "Z": "9"})
+	assertredis.HGetAll(t, rc, "foos:2021-11-19", map[string]string{"A": "5", "B": "6"})
+	assertredis.HGetAll(t, rc, "foos:2021-11-18", map[string]string{"A": "1", "B": "2", "C": "3"})
+	assertredis.HGetAll(t, rc, "foos:2021-11-17", map[string]string{})
 
 	assertGet(hash1, "A", "7")
 	assertGet(hash1, "Z", "9")
@@ -94,10 +94,10 @@ func TestIntervalHash(t *testing.T) {
 	err = hash1.Del(rc, "B") // from yesterday
 	require.NoError(t, err)
 
-	assertredis.HGetAll(t, rp, "foos:2021-11-20", map[string]string{"Z": "9"})
-	assertredis.HGetAll(t, rp, "foos:2021-11-19", map[string]string{})
-	assertredis.HGetAll(t, rp, "foos:2021-11-18", map[string]string{"A": "1", "B": "2", "C": "3"})
-	assertredis.HGetAll(t, rp, "foos:2021-11-17", map[string]string{})
+	assertredis.HGetAll(t, rc, "foos:2021-11-20", map[string]string{"Z": "9"})
+	assertredis.HGetAll(t, rc, "foos:2021-11-19", map[string]string{})
+	assertredis.HGetAll(t, rc, "foos:2021-11-18", map[string]string{"A": "1", "B": "2", "C": "3"})
+	assertredis.HGetAll(t, rc, "foos:2021-11-17", map[string]string{})
 
 	assertGet(hash1, "A", "")
 	assertGet(hash1, "Z", "9")
@@ -108,8 +108,8 @@ func TestIntervalHash(t *testing.T) {
 	err = hash1.Clear(rc)
 	require.NoError(t, err)
 
-	assertredis.HGetAll(t, rp, "foos:2021-11-20", map[string]string{})
-	assertredis.HGetAll(t, rp, "foos:2021-11-19", map[string]string{})
+	assertredis.HGetAll(t, rc, "foos:2021-11-20", map[string]string{})
+	assertredis.HGetAll(t, rc, "foos:2021-11-19", map[string]string{})
 
 	assertGet(hash1, "A", "")
 	assertGet(hash1, "Z", "")
@@ -122,8 +122,8 @@ func TestIntervalHash(t *testing.T) {
 	hash2.Set(rc, "A", "1")
 	hash2.Set(rc, "B", "2")
 
-	assertredis.HGetAll(t, rp, "foos:2021-11-20T12:05", map[string]string{"A": "1", "B": "2"})
-	assertredis.HGetAll(t, rp, "foos:2021-11-20T12:00", map[string]string{})
+	assertredis.HGetAll(t, rc, "foos:2021-11-20T12:05", map[string]string{"A": "1", "B": "2"})
+	assertredis.HGetAll(t, rc, "foos:2021-11-20T12:00", map[string]string{})
 
 	assertGet(hash2, "A", "1")
 	assertGet(hash2, "B", "2")
@@ -134,8 +134,8 @@ func TestIntervalHash(t *testing.T) {
 	hash3.Set(rc, "A", "1")
 	hash3.Set(rc, "B", "2")
 
-	assertredis.HGetAll(t, rp, "foos:2021-11-20T12:07:00", map[string]string{"A": "1", "B": "2"})
-	assertredis.HGetAll(t, rp, "foos:2021-11-20T12:06:55", map[string]string{})
+	assertredis.HGetAll(t, rc, "foos:2021-11-20T12:07:00", map[string]string{"A": "1", "B": "2"})
+	assertredis.HGetAll(t, rc, "foos:2021-11-20T12:06:55", map[string]string{})
 
 	assertGet(hash3, "A", "1")
 	assertGet(hash3, "B", "2")

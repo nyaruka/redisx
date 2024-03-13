@@ -29,8 +29,8 @@ func TestIntervalSet(t *testing.T) {
 	assert.NoError(t, set1.Add(rc, "B"))
 	assert.NoError(t, set1.Add(rc, "C"))
 
-	assertredis.SMembers(t, rp, "foos:2021-11-18", []string{"A", "B", "C"})
-	assertredis.SMembers(t, rp, "foos:2021-11-17", []string{})
+	assertredis.SMembers(t, rc, "foos:2021-11-18", []string{"A", "B", "C"})
+	assertredis.SMembers(t, rc, "foos:2021-11-17", []string{})
 
 	assertIsMember := func(s *redisx.IntervalSet, v string) {
 		contains, err := s.IsMember(rc, v)
@@ -54,9 +54,9 @@ func TestIntervalSet(t *testing.T) {
 	set1.Add(rc, "D")
 	set1.Add(rc, "E")
 
-	assertredis.SMembers(t, rp, "foos:2021-11-19", []string{"D", "E"})
-	assertredis.SMembers(t, rp, "foos:2021-11-18", []string{"A", "B", "C"})
-	assertredis.SMembers(t, rp, "foos:2021-11-17", []string{})
+	assertredis.SMembers(t, rc, "foos:2021-11-19", []string{"D", "E"})
+	assertredis.SMembers(t, rc, "foos:2021-11-18", []string{"A", "B", "C"})
+	assertredis.SMembers(t, rc, "foos:2021-11-17", []string{})
 
 	assertIsMember(set1, "A")
 	assertIsMember(set1, "B")
@@ -71,10 +71,10 @@ func TestIntervalSet(t *testing.T) {
 	set1.Add(rc, "F")
 	set1.Add(rc, "G")
 
-	assertredis.SMembers(t, rp, "foos:2021-11-20", []string{"F", "G"})
-	assertredis.SMembers(t, rp, "foos:2021-11-19", []string{"D", "E"})
-	assertredis.SMembers(t, rp, "foos:2021-11-18", []string{"A", "B", "C"})
-	assertredis.SMembers(t, rp, "foos:2021-11-17", []string{})
+	assertredis.SMembers(t, rc, "foos:2021-11-20", []string{"F", "G"})
+	assertredis.SMembers(t, rc, "foos:2021-11-19", []string{"D", "E"})
+	assertredis.SMembers(t, rc, "foos:2021-11-18", []string{"A", "B", "C"})
+	assertredis.SMembers(t, rc, "foos:2021-11-17", []string{})
 
 	assertNotIsMember(set1, "A") // too old
 	assertNotIsMember(set1, "B") // too old
@@ -89,8 +89,8 @@ func TestIntervalSet(t *testing.T) {
 	err = set1.Rem(rc, "E") // from yesterday
 	require.NoError(t, err)
 
-	assertredis.SMembers(t, rp, "foos:2021-11-20", []string{"G"})
-	assertredis.SMembers(t, rp, "foos:2021-11-19", []string{"D"})
+	assertredis.SMembers(t, rc, "foos:2021-11-20", []string{"G"})
+	assertredis.SMembers(t, rc, "foos:2021-11-19", []string{"D"})
 
 	assertIsMember(set1, "D")
 	assertNotIsMember(set1, "E")
@@ -100,8 +100,8 @@ func TestIntervalSet(t *testing.T) {
 	err = set1.Clear(rc)
 	require.NoError(t, err)
 
-	assertredis.SMembers(t, rp, "foos:2021-11-20", []string{})
-	assertredis.SMembers(t, rp, "foos:2021-11-19", []string{})
+	assertredis.SMembers(t, rc, "foos:2021-11-20", []string{})
+	assertredis.SMembers(t, rc, "foos:2021-11-19", []string{})
 
 	assertNotIsMember(set1, "D")
 	assertNotIsMember(set1, "E")
@@ -113,8 +113,8 @@ func TestIntervalSet(t *testing.T) {
 	set2.Add(rc, "A")
 	set2.Add(rc, "B")
 
-	assertredis.SMembers(t, rp, "foos:2021-11-20T12:05", []string{"A", "B"})
-	assertredis.SMembers(t, rp, "foos:2021-11-20T12:00", []string{})
+	assertredis.SMembers(t, rc, "foos:2021-11-20T12:05", []string{"A", "B"})
+	assertredis.SMembers(t, rc, "foos:2021-11-20T12:00", []string{})
 
 	assertIsMember(set2, "A")
 	assertIsMember(set2, "B")
@@ -125,8 +125,8 @@ func TestIntervalSet(t *testing.T) {
 	set3.Add(rc, "A")
 	set3.Add(rc, "B")
 
-	assertredis.SMembers(t, rp, "foos:2021-11-20T12:07:00", []string{"A", "B"})
-	assertredis.SMembers(t, rp, "foos:2021-11-20T12:06:55", []string{})
+	assertredis.SMembers(t, rc, "foos:2021-11-20T12:07:00", []string{"A", "B"})
+	assertredis.SMembers(t, rc, "foos:2021-11-20T12:06:55", []string{})
 
 	assertIsMember(set3, "A")
 	assertIsMember(set3, "B")
