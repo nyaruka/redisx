@@ -1,3 +1,7 @@
+v0.8.0 (2024-03-13)
+-------------------------
+ * Update assertredis asserts to take a connection instead of a pool
+
 v0.7.0 (2024-03-12)
 -------------------------
  * Improve asserts
