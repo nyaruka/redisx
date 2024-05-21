@@ -1,3 +1,7 @@
+v0.8.1 (2024-05-21)
+-------------------------
+ * Use std library errors
+
 v0.8.0 (2024-03-13)
 -------------------------
  * Update assertredis asserts to take a connection instead of a pool
