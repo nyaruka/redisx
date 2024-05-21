@@ -2,10 +2,10 @@ package redisx
 
 import (
 	_ "embed"
+	"fmt"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
-	"github.com/pkg/errors"
 )
 
 // Locker is a lock implementation where grabbing returns a lock value and that value must be
@@ -34,7 +34,7 @@ func (l *Locker) Grab(rp *redis.Pool, retry time.Duration) (string, error) {
 		rc.Close()
 
 		if err != nil {
-			return "", errors.Wrapf(err, "error trying to get lock")
+			return "", fmt.Errorf("error trying to get lock: %w", err)
 		}
 		if success == "OK" {
 			break
