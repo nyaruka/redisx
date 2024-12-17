@@ -19,8 +19,8 @@ func TestIntervalHash(t *testing.T) {
 
 	defer assertredis.FlushDB()
 
-	defer dates.SetNowSource(dates.DefaultNowSource)
-	setNow := func(d time.Time) { dates.SetNowSource(dates.NewFixedNowSource(d)) }
+	defer dates.SetNowFunc(time.Now)
+	setNow := func(d time.Time) { dates.SetNowFunc(dates.NewFixedNow(d)) }
 
 	setNow(time.Date(2021, 11, 18, 12, 7, 3, 234567, time.UTC))
 
