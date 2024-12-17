@@ -8,7 +8,7 @@ import (
 
 const (
 	// maybe don't run these tests if this is where you store your production database
-	testDBAddress = "localhost:6379"
+	testDBAddress = "redis6:6379"
 	testDBIndex   = 0
 )
 
