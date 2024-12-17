@@ -1,3 +1,8 @@
+v0.9.0 (2024-12-17)
+-------------------------
+ * Test against redis 7 and valkey 8 too
+ * Update deps
+
 v0.8.1 (2024-05-21)
 -------------------------
  * Use std library errors
