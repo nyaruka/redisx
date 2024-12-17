@@ -17,8 +17,8 @@ func TestIntervalSeries(t *testing.T) {
 
 	defer assertredis.FlushDB()
 
-	defer dates.SetNowSource(dates.DefaultNowSource)
-	setNow := func(d time.Time) { dates.SetNowSource(dates.NewFixedNowSource(d)) }
+	defer dates.SetNowFunc(time.Now)
+	setNow := func(d time.Time) { dates.SetNowFunc(dates.NewFixedNow(d)) }
 
 	assertGet := func(s *redisx.IntervalSeries, f string, expected []int64) {
 		actual, err := s.Get(rc, f)
