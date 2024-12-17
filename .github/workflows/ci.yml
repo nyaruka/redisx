@@ -11,17 +11,27 @@ jobs:
       redis6:
         image: redis:6.2-alpine
         ports:
-          - 6379:6379
+          - 6362:6379
+      redis7:
+        image: redis:7.4-alpine
+        ports:
+          - 6374:6379
+      valkey8:
+        image: valkey/valkey:8.0-alpine
+        ports:
+          - 6380:6379
 
     strategy:
       matrix:
-        go-version: [1.23.x]
+        redis-host: [redis6, redis7, valkey8]
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
     - name: Run tests
+      env:
+        REDIS_HOST: ${{ matrix.redis-host }}
       run: go test -p=1 -coverprofile=coverage.text -covermode=atomic ./...
 
     - name: Upload coverage

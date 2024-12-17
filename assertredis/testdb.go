@@ -2,21 +2,21 @@ package assertredis
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/gomodule/redigo/redis"
 )
 
 const (
-	// maybe don't run these tests if this is where you store your production database
-	testDBAddress = "redis6:6379"
-	testDBIndex   = 0
+	// maybe don't run these tests where you store your production database
+	testDBIndex = 0
 )
 
 // TestDB returns a redis pool to our test database
 func TestDB() *redis.Pool {
 	return &redis.Pool{
 		Dial: func() (redis.Conn, error) {
-			conn, err := redis.Dial("tcp", testDBAddress)
+			conn, err := redis.Dial("tcp", getHostAddress())
 			if err != nil {
 				return nil, err
 			}
@@ -28,7 +28,7 @@ func TestDB() *redis.Pool {
 
 // FlushDB flushes the test database
 func FlushDB() {
-	rc, err := redis.Dial("tcp", testDBAddress)
+	rc, err := redis.Dial("tcp", getHostAddress())
 	if err != nil {
 		panic(fmt.Sprintf("error connecting to redis db: %s", err.Error()))
 	}
@@ -37,4 +37,12 @@ func FlushDB() {
 	if err != nil {
 		panic(fmt.Sprintf("error flushing redis db: %s", err.Error()))
 	}
+}
+
+func getHostAddress() string {
+	host := os.Getenv("REDIS_HOST")
+	if host == "" {
+		host = "localhost"
+	}
+	return host + ":6379"
 }
