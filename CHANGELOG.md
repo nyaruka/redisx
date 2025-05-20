@@ -1,3 +1,8 @@
+v0.10.0 (2025-05-20)
+-------------------------
+ * Add Locker.IsLocked
+ * Update go version and deps
+
 v0.9.0 (2024-12-17)
 -------------------------
  * Test against redis 7 and valkey 8 too
