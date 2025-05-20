@@ -80,3 +80,16 @@ func (l *Locker) Extend(rp *redis.Pool, value string, expiration time.Duration) 
 	_, err := lockerExtendScript.Do(rc, l.key, value, seconds)
 	return err
 }
+
+// IsLocked returns whether this lock is currently held by any process.
+func (l *Locker) IsLocked(rp *redis.Pool) (bool, error) {
+	rc := rp.Get()
+	defer rc.Close()
+
+	exists, err := redis.Bool(rc.Do("EXISTS", l.key))
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}
