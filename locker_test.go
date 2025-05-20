@@ -18,10 +18,18 @@ func TestLocker(t *testing.T) {
 
 	locker := redisx.NewLocker("test", time.Second*5)
 
-	// acquire a lock
+	isLocked, err := locker.IsLocked(rp)
+	assert.NoError(t, err)
+	assert.False(t, isLocked)
+
+	// grab lock
 	lock1, err := locker.Grab(rp, time.Second)
 	assert.NoError(t, err)
 	assert.NotZero(t, lock1)
+
+	isLocked, err = locker.IsLocked(rp)
+	assert.NoError(t, err)
+	assert.True(t, isLocked)
 
 	assertredis.Exists(t, rc, "test")
 
