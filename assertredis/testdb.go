@@ -1,6 +1,7 @@
 package assertredis
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -20,7 +21,7 @@ func TestDB() *redis.Pool {
 			if err != nil {
 				return nil, err
 			}
-			_, err = conn.Do("SELECT", 0)
+			_, err = redis.DoContext(conn, context.Background(), "SELECT", 0)
 			return conn, err
 		},
 	}
@@ -32,8 +33,8 @@ func FlushDB() {
 	if err != nil {
 		panic(fmt.Sprintf("error connecting to redis db: %s", err.Error()))
 	}
-	rc.Do("SELECT", testDBIndex)
-	_, err = rc.Do("FLUSHDB")
+	redis.DoContext(rc, context.Background(), "SELECT", testDBIndex)
+	_, err = redis.DoContext(rc, context.Background(), "FLUSHDB")
 	if err != nil {
 		panic(fmt.Sprintf("error flushing redis db: %s", err.Error()))
 	}

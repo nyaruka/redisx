@@ -1,6 +1,7 @@
 package redisx
 
 import (
+	"context"
 	_ "embed"
 	"time"
 
@@ -20,13 +21,13 @@ func NewIntervalSeries(keyBase string, interval time.Duration, size int) *Interv
 }
 
 // Record increments the value of field by value in the current interval
-func (s *IntervalSeries) Record(rc redis.Conn, field string, value int64) error {
+func (s *IntervalSeries) Record(ctx context.Context, rc redis.Conn, field string, value int64) error {
 	currKey := s.keys()[0]
 
 	rc.Send("MULTI")
 	rc.Send("HINCRBY", currKey, field, value)
 	rc.Send("EXPIRE", currKey, s.size*int(s.interval/time.Second))
-	_, err := rc.Do("EXEC")
+	_, err := redis.DoContext(rc, ctx, "EXEC")
 	return err
 }
 
@@ -35,16 +36,16 @@ var iseriesGet string
 var iseriesGetScript = redis.NewScript(-1, iseriesGet)
 
 // Get gets the values of field in all intervals
-func (s *IntervalSeries) Get(rc redis.Conn, field string) ([]int64, error) {
+func (s *IntervalSeries) Get(ctx context.Context, rc redis.Conn, field string) ([]int64, error) {
 	keys := s.keys()
 	args := redis.Args{}.Add(len(keys)).AddFlat(keys).Add(field)
 
-	return redis.Int64s(iseriesGetScript.Do(rc, args...))
+	return redis.Int64s(iseriesGetScript.DoContext(ctx, rc, args...))
 }
 
 // Total gets the total value of field across all intervals
-func (s *IntervalSeries) Total(rc redis.Conn, field string) (int64, error) {
-	vals, err := s.Get(rc, field)
+func (s *IntervalSeries) Total(ctx context.Context, rc redis.Conn, field string) (int64, error) {
+	vals, err := s.Get(ctx, rc, field)
 	if err != nil {
 		return 0, err
 	}
