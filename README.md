@@ -1,6 +1,6 @@
 # redisx [![Build Status](https://github.com/nyaruka/redisx/workflows/CI/badge.svg)](https://github.com/nyaruka/redisx/actions?query=workflow%3ACI) [![codecov](https://codecov.io/gh/nyaruka/redisx/branch/main/graph/badge.svg)](https://codecov.io/gh/nyaruka/redisx) [![Go Report Card](https://goreportcard.com/badge/github.com/nyaruka/redisx)](https://goreportcard.com/report/github.com/nyaruka/redisx)
 
-redisx is a library of Go utilities built on the [redigo](github.com/gomodule/redigo) redis client library.
+redisx is a library of Go utilities built on the [valkey-go](github.com/valkey-io/valkey-go) redis client library.
 
 ## NewPool
 

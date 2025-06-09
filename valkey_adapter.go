@@ -31,8 +31,10 @@ type ValkeyPool struct {
 
 // ValkeyConn wraps valkey-go client to provide connection-like interface similar to redigo
 type ValkeyConn struct {
-	client valkey.Client
-	ctx    context.Context
+	client    valkey.Client
+	ctx       context.Context
+	pipelined []valkey.Completed
+	multi     bool
 }
 
 // ValkeyScript wraps valkey-go Lua script functionality
@@ -50,8 +52,10 @@ func NewValkeyPool(client valkey.Client) *ValkeyPool {
 // Get returns a connection from the pool
 func (p *ValkeyPool) Get() Conn {
 	return &ValkeyConn{
-		client: p.client,
-		ctx:    context.Background(),
+		client:    p.client,
+		ctx:       context.Background(),
+		pipelined: nil,
+		multi:     false,
 	}
 }
 
@@ -63,6 +67,33 @@ func (c *ValkeyConn) Close() error {
 
 // Do executes a Redis command
 func (c *ValkeyConn) Do(cmd string, args ...interface{}) (interface{}, error) {
+	// If we're in MULTI mode and this is EXEC, execute the transaction
+	if c.multi && cmd == "EXEC" {
+		if len(c.pipelined) == 0 {
+			return []interface{}{}, nil // Empty transaction returns empty array
+		}
+		results := c.client.DoMulti(c.ctx, c.pipelined...)
+		c.pipelined = nil
+		c.multi = false
+		
+		// Return the results array - similar to redigo's behavior
+		interfaceResults := make([]interface{}, len(results))
+		for i, result := range results {
+			if result.Error() != nil {
+				return nil, result.Error()
+			}
+			interfaceResults[i] = result
+		}
+		return interfaceResults, nil
+	}
+	
+	// If this is MULTI, start transaction mode
+	if cmd == "MULTI" {
+		c.multi = true
+		c.pipelined = nil
+		return "OK", nil
+	}
+	
 	// Convert all args to strings for valkey command builder
 	strArgs := make([]string, len(args))
 	for i, arg := range args {
@@ -75,7 +106,13 @@ func (c *ValkeyConn) Do(cmd string, args ...interface{}) (interface{}, error) {
 		command = command.Args(arg)
 	}
 	
-	// Execute command
+	// If we're in multi mode, queue the command
+	if c.multi {
+		c.pipelined = append(c.pipelined, command.Build())
+		return "QUEUED", nil
+	}
+	
+	// Execute command immediately
 	result := c.client.Do(c.ctx, command.Build())
 	if result.Error() != nil {
 		return nil, result.Error()
@@ -85,8 +122,15 @@ func (c *ValkeyConn) Do(cmd string, args ...interface{}) (interface{}, error) {
 	return result, nil
 }
 
-// Send queues a command for pipeline execution - for now we'll execute immediately
+// Send queues a command for pipeline/transaction execution
 func (c *ValkeyConn) Send(cmd string, args ...interface{}) error {
+	// In multi mode, treat Send the same as Do
+	if c.multi {
+		_, err := c.Do(cmd, args...)
+		return err
+	}
+	
+	// For compatibility, just execute immediately if not in multi mode
 	_, err := c.Do(cmd, args...)
 	return err
 }
@@ -112,16 +156,41 @@ func (s *ValkeyScript) Do(c Conn, keysAndArgs ...interface{}) (interface{}, erro
 		s.lua = valkey.NewLuaScript(s.script)
 	}
 	
-	// Split keys and args
-	keys := make([]string, s.numKeys)
-	args := make([]string, len(keysAndArgs)-s.numKeys)
+	var keys []string
+	var args []string
 	
-	for i := 0; i < s.numKeys && i < len(keysAndArgs); i++ {
-		keys[i] = fmt.Sprintf("%v", keysAndArgs[i])
-	}
-	
-	for i := s.numKeys; i < len(keysAndArgs); i++ {
-		args[i-s.numKeys] = fmt.Sprintf("%v", keysAndArgs[i])
+	if s.numKeys == -1 {
+		// Dynamic key count - first argument is the number of keys
+		if len(keysAndArgs) == 0 {
+			return nil, fmt.Errorf("missing key count for dynamic script")
+		}
+		
+		keyCount := int(keysAndArgs[0].(int))
+		if len(keysAndArgs) < keyCount+1 {
+			return nil, fmt.Errorf("insufficient arguments for dynamic script")
+		}
+		
+		keys = make([]string, keyCount)
+		for i := 0; i < keyCount; i++ {
+			keys[i] = fmt.Sprintf("%v", keysAndArgs[i+1])
+		}
+		
+		args = make([]string, len(keysAndArgs)-keyCount-1)
+		for i := keyCount + 1; i < len(keysAndArgs); i++ {
+			args[i-keyCount-1] = fmt.Sprintf("%v", keysAndArgs[i])
+		}
+	} else {
+		// Fixed key count
+		keys = make([]string, s.numKeys)
+		args = make([]string, len(keysAndArgs)-s.numKeys)
+		
+		for i := 0; i < s.numKeys && i < len(keysAndArgs); i++ {
+			keys[i] = fmt.Sprintf("%v", keysAndArgs[i])
+		}
+		
+		for i := s.numKeys; i < len(keysAndArgs); i++ {
+			args[i-s.numKeys] = fmt.Sprintf("%v", keysAndArgs[i])
+		}
 	}
 	
 	// Execute the script
