@@ -12,9 +12,9 @@ import (
 )
 
 func TestIntervalSet(t *testing.T) {
-	rp := assertredis.TestDB()
-	rc := rp.Get()
-	defer rc.Close()
+	client := assertredis.TestDB()
+	// removed rc := rp.Get()
+	defer client.Close()
 
 	defer assertredis.FlushDB()
 
@@ -25,20 +25,20 @@ func TestIntervalSet(t *testing.T) {
 
 	// create a 24-hour x 2 based set
 	set1 := redisx.NewIntervalSet("foos", time.Hour*24, 2)
-	assert.NoError(t, set1.Add(rc, "A"))
-	assert.NoError(t, set1.Add(rc, "B"))
-	assert.NoError(t, set1.Add(rc, "C"))
+	assert.NoError(t, set1.Add(client, "A"))
+	assert.NoError(t, set1.Add(client, "B"))
+	assert.NoError(t, set1.Add(client, "C"))
 
-	assertredis.SMembers(t, rc, "foos:2021-11-18", []string{"A", "B", "C"})
-	assertredis.SMembers(t, rc, "foos:2021-11-17", []string{})
+	assertredis.SMembers(t, client, "foos:2021-11-18", []string{"A", "B", "C"})
+	assertredis.SMembers(t, client, "foos:2021-11-17", []string{})
 
 	assertIsMember := func(s *redisx.IntervalSet, v string) {
-		contains, err := s.IsMember(rc, v)
+		contains, err := s.IsMember(client, v)
 		assert.NoError(t, err)
 		assert.True(t, contains, "expected marker to contain %s", v)
 	}
 	assertNotIsMember := func(s *redisx.IntervalSet, v string) {
-		contains, err := s.IsMember(rc, v)
+		contains, err := s.IsMember(client, v)
 		assert.NoError(t, err)
 		assert.False(t, contains, "expected marker to not contain %s", v)
 	}
@@ -51,12 +51,12 @@ func TestIntervalSet(t *testing.T) {
 	// move forward a day..
 	setNow(time.Date(2021, 11, 19, 12, 0, 3, 234567, time.UTC))
 
-	set1.Add(rc, "D")
-	set1.Add(rc, "E")
+	set1.Add(client, "D")
+	set1.Add(client, "E")
 
-	assertredis.SMembers(t, rc, "foos:2021-11-19", []string{"D", "E"})
-	assertredis.SMembers(t, rc, "foos:2021-11-18", []string{"A", "B", "C"})
-	assertredis.SMembers(t, rc, "foos:2021-11-17", []string{})
+	assertredis.SMembers(t, client, "foos:2021-11-19", []string{"D", "E"})
+	assertredis.SMembers(t, client, "foos:2021-11-18", []string{"A", "B", "C"})
+	assertredis.SMembers(t, client, "foos:2021-11-17", []string{})
 
 	assertIsMember(set1, "A")
 	assertIsMember(set1, "B")
@@ -68,13 +68,13 @@ func TestIntervalSet(t *testing.T) {
 	// move forward again..
 	setNow(time.Date(2021, 11, 20, 12, 7, 3, 234567, time.UTC))
 
-	set1.Add(rc, "F")
-	set1.Add(rc, "G")
+	set1.Add(client, "F")
+	set1.Add(client, "G")
 
-	assertredis.SMembers(t, rc, "foos:2021-11-20", []string{"F", "G"})
-	assertredis.SMembers(t, rc, "foos:2021-11-19", []string{"D", "E"})
-	assertredis.SMembers(t, rc, "foos:2021-11-18", []string{"A", "B", "C"})
-	assertredis.SMembers(t, rc, "foos:2021-11-17", []string{})
+	assertredis.SMembers(t, client, "foos:2021-11-20", []string{"F", "G"})
+	assertredis.SMembers(t, client, "foos:2021-11-19", []string{"D", "E"})
+	assertredis.SMembers(t, client, "foos:2021-11-18", []string{"A", "B", "C"})
+	assertredis.SMembers(t, client, "foos:2021-11-17", []string{})
 
 	assertNotIsMember(set1, "A") // too old
 	assertNotIsMember(set1, "B") // too old
@@ -84,24 +84,24 @@ func TestIntervalSet(t *testing.T) {
 	assertIsMember(set1, "F")
 	assertIsMember(set1, "G")
 
-	err := set1.Rem(rc, "F") // from today
+	err := set1.Rem(client, "F") // from today
 	require.NoError(t, err)
-	err = set1.Rem(rc, "E") // from yesterday
+	err = set1.Rem(client, "E") // from yesterday
 	require.NoError(t, err)
 
-	assertredis.SMembers(t, rc, "foos:2021-11-20", []string{"G"})
-	assertredis.SMembers(t, rc, "foos:2021-11-19", []string{"D"})
+	assertredis.SMembers(t, client, "foos:2021-11-20", []string{"G"})
+	assertredis.SMembers(t, client, "foos:2021-11-19", []string{"D"})
 
 	assertIsMember(set1, "D")
 	assertNotIsMember(set1, "E")
 	assertNotIsMember(set1, "F")
 	assertIsMember(set1, "G")
 
-	err = set1.Clear(rc)
+	err = set1.Clear(client)
 	require.NoError(t, err)
 
-	assertredis.SMembers(t, rc, "foos:2021-11-20", []string{})
-	assertredis.SMembers(t, rc, "foos:2021-11-19", []string{})
+	assertredis.SMembers(t, client, "foos:2021-11-20", []string{})
+	assertredis.SMembers(t, client, "foos:2021-11-19", []string{})
 
 	assertNotIsMember(set1, "D")
 	assertNotIsMember(set1, "E")
@@ -110,11 +110,11 @@ func TestIntervalSet(t *testing.T) {
 
 	// create a 5 minute x 3 based set
 	set2 := redisx.NewIntervalSet("foos", time.Minute*5, 3)
-	set2.Add(rc, "A")
-	set2.Add(rc, "B")
+	set2.Add(client, "A")
+	set2.Add(client, "B")
 
-	assertredis.SMembers(t, rc, "foos:2021-11-20T12:05", []string{"A", "B"})
-	assertredis.SMembers(t, rc, "foos:2021-11-20T12:00", []string{})
+	assertredis.SMembers(t, client, "foos:2021-11-20T12:05", []string{"A", "B"})
+	assertredis.SMembers(t, client, "foos:2021-11-20T12:00", []string{})
 
 	assertIsMember(set2, "A")
 	assertIsMember(set2, "B")
@@ -122,11 +122,11 @@ func TestIntervalSet(t *testing.T) {
 
 	// create a 5 second x 2 based set
 	set3 := redisx.NewIntervalSet("foos", time.Second*5, 2)
-	set3.Add(rc, "A")
-	set3.Add(rc, "B")
+	set3.Add(client, "A")
+	set3.Add(client, "B")
 
-	assertredis.SMembers(t, rc, "foos:2021-11-20T12:07:00", []string{"A", "B"})
-	assertredis.SMembers(t, rc, "foos:2021-11-20T12:06:55", []string{})
+	assertredis.SMembers(t, client, "foos:2021-11-20T12:07:00", []string{"A", "B"})
+	assertredis.SMembers(t, client, "foos:2021-11-20T12:06:55", []string{})
 
 	assertIsMember(set3, "A")
 	assertIsMember(set3, "B")

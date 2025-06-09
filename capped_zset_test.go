@@ -27,7 +27,7 @@ func TestCappedZSet(t *testing.T) {
 	assert.NoError(t, zset.Add(client, "C", 3))
 	assert.NoError(t, zset.Add(client, "B", 2))
 
-	assertredis.ZGetAll(t, rc, "foo", map[string]float64{"A": 1, "B": 2, "C": 3})
+	assertredis.ZGetAll(t, client, "foo", map[string]float64{"A": 1, "B": 2, "C": 3})
 
 	card, err := zset.Card(client)
 	assert.NoError(t, err)
