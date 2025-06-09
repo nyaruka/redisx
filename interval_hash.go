@@ -1,9 +1,12 @@
 package redisx
 
 import (
+	"context"
 	_ "embed"
 	"errors"
 	"time"
+
+	"github.com/valkey-io/valkey-go"
 )
 
 // IntervalHash operates like a hash map but with expiring intervals
@@ -20,33 +23,29 @@ func NewIntervalHash(keyBase string, interval time.Duration, size int) *Interval
 
 //go:embed lua/ihash_get.lua
 var ihashGet string
-var ihashGetScript = NewScript(-1, ihashGet)
+var ihashGetScript = valkey.NewLuaScript(ihashGet)
 
 // Get returns the value of the given field
-func (h *IntervalHash) Get(rc Conn, field string) (string, error) {
+func (h *IntervalHash) Get(client valkey.Client, field string) (string, error) {
+	ctx := context.Background()
 	keys := h.keys()
-	
-	// Create args: [len(keys), key1, key2, ..., field]
-	args := make([]interface{}, 0, len(keys)+2)
-	args = append(args, len(keys))
-	for _, key := range keys {
-		args = append(args, key)
-	}
-	args = append(args, field)
+	args := []string{field}
 
-	value, err := String(ihashGetScript.Do(rc, args...))
-	if err != nil {
-		return "", err
+	result := ihashGetScript.Exec(ctx, client, keys, args)
+	if result.Error() != nil {
+		return "", result.Error()
 	}
-	return value, nil
+	
+	return result.ToString()
 }
 
 //go:embed lua/ihash_mget.lua
 var ihashMGet string
-var ihashMGetScript = NewScript(-1, ihashMGet)
+var ihashMGetScript = valkey.NewLuaScript(ihashMGet)
 
 // MGet returns the values of the given fields
-func (h *IntervalHash) MGet(rc Conn, fields ...string) ([]string, error) {
+func (h *IntervalHash) MGet(client valkey.Client, fields ...string) ([]string, error) {
+	ctx := context.Background()
 	keys := h.keys()
 
 	// for consistency with HMGET, zero fields is an error
@@ -54,54 +53,90 @@ func (h *IntervalHash) MGet(rc Conn, fields ...string) ([]string, error) {
 		return nil, errors.New("wrong number of arguments for command")
 	}
 
-	// Create args: [len(keys), key1, key2, ..., field1, field2, ...]
-	args := make([]interface{}, 0, len(keys)+len(fields)+1)
-	args = append(args, len(keys))
-	for _, key := range keys {
-		args = append(args, key)
+	result := ihashMGetScript.Exec(ctx, client, keys, fields)
+	if result.Error() != nil {
+		return nil, result.Error()
 	}
-	for _, field := range fields {
-		args = append(args, field)
+	
+	// Convert array to strings
+	arr, err := result.ToArray()
+	if err != nil {
+		return nil, err
 	}
-
-	// Note: we ignore ErrNil equivalent in valkey
-	return Strings(ihashMGetScript.Do(rc, args...))
+	
+	strings := make([]string, len(arr))
+	for i, item := range arr {
+		str, err := item.ToString()
+		if err != nil {
+			return nil, err
+		}
+		strings[i] = str
+	}
+	
+	return strings, nil
 }
 
 // Set sets the value of the given field
-func (h *IntervalHash) Set(rc Conn, field, value string) error {
+func (h *IntervalHash) Set(client valkey.Client, field, value string) error {
+	ctx := context.Background()
 	key := h.keys()[0]
-
-	rc.Send("MULTI")
-	rc.Send("HSET", key, field, value)
-	rc.Send("EXPIRE", key, h.size*int(h.interval/time.Second))
-	_, err := rc.Do("EXEC")
-	return err
+	
+	// Use pipeline to execute multiple commands atomically
+	cmds := []valkey.Completed{
+		client.B().Hset().Key(key).FieldValue().FieldValue(field, value).Build(),
+		client.B().Expire().Key(key).Seconds(int64(h.size * int(h.interval/time.Second))).Build(),
+	}
+	
+	results := client.DoMulti(ctx, cmds...)
+	for _, result := range results {
+		if result.Error() != nil {
+			return result.Error()
+		}
+	}
+	
+	return nil
 }
 
 // Del removes the given fields
-func (h *IntervalHash) Del(rc Conn, fields ...string) error {
-	rc.Send("MULTI")
-	for _, k := range h.keys() {
-		args := make([]interface{}, 0, len(fields)+1)
-		args = append(args, k)
-		for _, field := range fields {
-			args = append(args, field)
-		}
-		rc.Send("HDEL", args...)
+func (h *IntervalHash) Del(client valkey.Client, fields ...string) error {
+	ctx := context.Background()
+	keys := h.keys()
+	
+	var cmds []valkey.Completed
+	for _, k := range keys {
+		cmd := client.B().Hdel().Key(k).Field(fields...).Build()
+		cmds = append(cmds, cmd)
 	}
-	_, err := rc.Do("EXEC")
-	return err
+	
+	results := client.DoMulti(ctx, cmds...)
+	for _, result := range results {
+		if result.Error() != nil {
+			return result.Error()
+		}
+	}
+	
+	return nil
 }
 
 // Clear removes all fields
-func (h *IntervalHash) Clear(rc Conn) error {
-	rc.Send("MULTI")
-	for _, k := range h.keys() {
-		rc.Send("DEL", k)
+func (h *IntervalHash) Clear(client valkey.Client) error {
+	ctx := context.Background()
+	keys := h.keys()
+	
+	var cmds []valkey.Completed
+	for _, k := range keys {
+		cmd := client.B().Del().Key(k).Build()
+		cmds = append(cmds, cmd)
 	}
-	_, err := rc.Do("EXEC")
-	return err
+	
+	results := client.DoMulti(ctx, cmds...)
+	for _, result := range results {
+		if result.Error() != nil {
+			return result.Error()
+		}
+	}
+	
+	return nil
 }
 
 func (h *IntervalHash) keys() []string {

@@ -7,11 +7,16 @@ import (
 
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/random"
+	"github.com/valkey-io/valkey-go"
 )
 
 // StringsWithScores parses an array reply which is alternating pairs of strings and scores (floats)
-func StringsWithScores(reply any, err error) ([]string, []float64, error) {
-	pairs, err := Values(reply, err)
+func StringsWithScores(reply valkey.ValkeyResult, err error) ([]string, []float64, error) {
+	if err != nil {
+		return nil, nil, err
+	}
+	
+	pairs, err := reply.ToArray()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -20,15 +25,22 @@ func StringsWithScores(reply any, err error) ([]string, []float64, error) {
 	scores := make([]float64, len(pairs)/2)
 
 	for i := 0; i < len(pairs)/2; i++ {
-		rawString := pairs[2*i].([]byte)
-		rawScore := pairs[2*i+1].([]byte)
-
-		score, err := strconv.ParseFloat(string(rawScore), 64)
+		str, err := pairs[2*i].ToString()
+		if err != nil {
+			return nil, nil, err
+		}
+		
+		scoreStr, err := pairs[2*i+1].ToString()
 		if err != nil {
 			return nil, nil, err
 		}
 
-		strings[i] = string(rawString)
+		score, err := strconv.ParseFloat(scoreStr, 64)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		strings[i] = str
 		scores[i] = score
 	}
 

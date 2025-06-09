@@ -1,8 +1,11 @@
 package redisx
 
 import (
+	"context"
 	_ "embed"
 	"time"
+
+	"github.com/valkey-io/valkey-go"
 )
 
 // IntervalSet operates like a set but with expiring intervals
@@ -19,57 +22,88 @@ func NewIntervalSet(keyBase string, interval time.Duration, size int) *IntervalS
 
 //go:embed lua/iset_ismember.lua
 var isetIsMember string
-var isetIsMemberScript = NewScript(-1, isetIsMember)
+var isetIsMemberScript = valkey.NewLuaScript(isetIsMember)
 
 // IsMember returns whether we contain the given value
-func (s *IntervalSet) IsMember(rc Conn, member string) (bool, error) {
+func (s *IntervalSet) IsMember(client valkey.Client, member string) (bool, error) {
+	ctx := context.Background()
 	keys := s.keys()
-	
-	// Create args: [len(keys), key1, key2, ..., member]
-	args := make([]interface{}, 0, len(keys)+2)
-	args = append(args, len(keys))
-	for _, key := range keys {
-		args = append(args, key)
-	}
-	args = append(args, member)
+	args := []string{member}
 
-	return Bool(isetIsMemberScript.Do(rc, args...))
+	result := isetIsMemberScript.Exec(ctx, client, keys, args)
+	if result.Error() != nil {
+		return false, result.Error()
+	}
+	
+	count, err := result.ToInt64()
+	if err != nil {
+		return false, err
+	}
+	
+	return count > 0, nil
 }
 
 // Add adds the given value
-func (s *IntervalSet) Add(rc Conn, member string) error {
+func (s *IntervalSet) Add(client valkey.Client, member string) error {
+	ctx := context.Background()
 	key := s.keys()[0]
 
-	rc.Send("MULTI")
-	rc.Send("SADD", key, member)
-	rc.Send("EXPIRE", key, s.size*int(s.interval/time.Second))
-	_, err := rc.Do("EXEC")
-	return err
+	// Use pipeline to execute multiple commands atomically
+	cmds := []valkey.Completed{
+		client.B().Sadd().Key(key).Member(member).Build(),
+		client.B().Expire().Key(key).Seconds(int64(s.size * int(s.interval/time.Second))).Build(),
+	}
+	
+	results := client.DoMulti(ctx, cmds...)
+	for _, result := range results {
+		if result.Error() != nil {
+			return result.Error()
+		}
+	}
+	
+	return nil
 }
 
 // Rem removes the given values
-func (s *IntervalSet) Rem(rc Conn, members ...string) error {
-	rc.Send("MULTI")
-	for _, k := range s.keys() {
-		args := make([]interface{}, 0, len(members)+1)
-		args = append(args, k)
-		for _, member := range members {
-			args = append(args, member)
-		}
-		rc.Send("SREM", args...)
+func (s *IntervalSet) Rem(client valkey.Client, members ...string) error {
+	ctx := context.Background()
+	keys := s.keys()
+	
+	var cmds []valkey.Completed
+	for _, k := range keys {
+		cmd := client.B().Srem().Key(k).Member(members...).Build()
+		cmds = append(cmds, cmd)
 	}
-	_, err := rc.Do("EXEC")
-	return err
+	
+	results := client.DoMulti(ctx, cmds...)
+	for _, result := range results {
+		if result.Error() != nil {
+			return result.Error()
+		}
+	}
+	
+	return nil
 }
 
 // Clear removes all values
-func (s *IntervalSet) Clear(rc Conn) error {
-	rc.Send("MULTI")
-	for _, k := range s.keys() {
-		rc.Send("DEL", k)
+func (s *IntervalSet) Clear(client valkey.Client) error {
+	ctx := context.Background()
+	keys := s.keys()
+	
+	var cmds []valkey.Completed
+	for _, k := range keys {
+		cmd := client.B().Del().Key(k).Build()
+		cmds = append(cmds, cmd)
 	}
-	_, err := rc.Do("EXEC")
-	return err
+	
+	results := client.DoMulti(ctx, cmds...)
+	for _, result := range results {
+		if result.Error() != nil {
+			return result.Error()
+		}
+	}
+	
+	return nil
 }
 
 func (s *IntervalSet) keys() []string {

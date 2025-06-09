@@ -1,6 +1,7 @@
 package redisx
 
 import (
+	"context"
 	"net/url"
 	"strconv"
 	"strings"
@@ -11,30 +12,30 @@ import (
 
 // WithMaxActive configures maximum number of concurrent connections to allow
 // Note: valkey-go handles connection pooling internally, so this is a no-op for compatibility
-func WithMaxActive(v int) func(Pool) {
-	return func(p Pool) {
+func WithMaxActive(v int) func(valkey.Client) {
+	return func(c valkey.Client) {
 		// valkey-go handles connection pooling internally
 	}
 }
 
 // WithMaxIdle configures the maximum number of idle connections to keep
 // Note: valkey-go handles connection pooling internally, so this is a no-op for compatibility
-func WithMaxIdle(v int) func(Pool) {
-	return func(p Pool) {
+func WithMaxIdle(v int) func(valkey.Client) {
+	return func(c valkey.Client) {
 		// valkey-go handles connection pooling internally
 	}
 }
 
 // WithIdleTimeout configures how long to wait before reaping a connection
 // Note: valkey-go handles connection pooling internally, so this is a no-op for compatibility
-func WithIdleTimeout(v time.Duration) func(Pool) {
-	return func(p Pool) {
+func WithIdleTimeout(v time.Duration) func(valkey.Client) {
+	return func(c valkey.Client) {
 		// valkey-go handles connection pooling internally
 	}
 }
 
 // NewPool creates a new pool with the given options
-func NewPool(redisURL string, options ...func(Pool)) (Pool, error) {
+func NewPool(redisURL string, options ...func(valkey.Client)) (valkey.Client, error) {
 	parsedURL, err := url.Parse(redisURL)
 	if err != nil {
 		return nil, err
@@ -74,21 +75,18 @@ func NewPool(redisURL string, options ...func(Pool)) (Pool, error) {
 		return nil, err
 	}
 
-	// Create pool wrapper
-	pool := NewValkeyPool(client)
-
 	// Apply options (they're no-ops for valkey but kept for compatibility)
 	for _, o := range options {
-		o(pool)
+		o(client)
 	}
 
 	// Test the connection
-	conn := pool.Get()
-	defer conn.Close()
-	if _, err = conn.Do("PING"); err != nil {
+	ctx := context.Background()
+	result := client.Do(ctx, client.B().Ping().Build())
+	if result.Error() != nil {
 		client.Close()
-		return nil, err
+		return nil, result.Error()
 	}
 
-	return pool, nil
+	return client, nil
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/nyaruka/redisx"
 	"github.com/valkey-io/valkey-go"
 )
 
@@ -15,7 +14,7 @@ const (
 )
 
 // TestDB returns a redis pool to our test database
-func TestDB() redisx.Pool {
+func TestDB() valkey.Client {
 	client, err := valkey.NewClient(valkey.ClientOption{
 		InitAddress: []string{getHostAddress()},
 		SelectDB:    testDBIndex,
@@ -24,7 +23,7 @@ func TestDB() redisx.Pool {
 		panic(fmt.Sprintf("error creating valkey client: %s", err.Error()))
 	}
 
-	return redisx.NewValkeyPool(client)
+	return client
 }
 
 // FlushDB flushes the test database

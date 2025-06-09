@@ -1,9 +1,12 @@
 package redisx
 
 import (
+	"context"
 	_ "embed"
 	"fmt"
 	"time"
+
+	"github.com/valkey-io/valkey-go"
 )
 
 // Locker is a lock implementation where grabbing returns a lock value and that value must be
@@ -21,20 +24,23 @@ func NewLocker(key string, expiration time.Duration) *Locker {
 // Grab tries to grab this lock in an atomic operation. It returns the lock value if successful.
 // It will retry every second until the retry period has ended, returning empty string if not
 // acquired in that time.
-func (l *Locker) Grab(rp Pool, retry time.Duration) (string, error) {
+func (l *Locker) Grab(client valkey.Client, retry time.Duration) (string, error) {
 	value := RandomBase64(10)                  // generate our lock value
 	expires := int(l.expiration / time.Second) // convert our expiration to seconds
 
+	ctx := context.Background()
 	start := time.Now()
 	for {
-		rc := rp.Get()
-		success, err := rc.Do("SET", l.key, value, "EX", expires, "NX")
-		rc.Close()
+		cmd := client.B().Set().Key(l.key).Value(value).Nx().ExSeconds(int64(expires)).Build()
+		result := client.Do(ctx, cmd)
 
-		if err != nil {
-			return "", fmt.Errorf("error trying to get lock: %w", err)
+		if result.Error() != nil {
+			return "", fmt.Errorf("error trying to get lock: %w", result.Error())
 		}
-		if success == "OK" {
+		
+		// Check if SET was successful (returns "OK" when successful with NX)
+		str, err := result.ToString()
+		if err == nil && str == "OK" {
 			break
 		}
 
@@ -50,44 +56,46 @@ func (l *Locker) Grab(rp Pool, retry time.Duration) (string, error) {
 
 //go:embed lua/locker_release.lua
 var lockerRelease string
-var lockerReleaseScript = NewScript(1, lockerRelease)
+var lockerReleaseScript = valkey.NewLuaScript(lockerRelease)
 
 // Release releases this lock if the given lock value is correct (i.e we own this lock). It is not an
 // error to release a lock that is no longer present.
-func (l *Locker) Release(rp Pool, value string) error {
-	rc := rp.Get()
-	defer rc.Close()
-
+func (l *Locker) Release(client valkey.Client, value string) error {
+	ctx := context.Background()
+	
 	// we use lua here because we only want to release the lock if we own it
-	_, err := lockerReleaseScript.Do(rc, l.key, value)
-	return err
+	result := lockerReleaseScript.Exec(ctx, client, []string{l.key}, []string{value})
+	return result.Error()
 }
 
 //go:embed lua/locker_extend.lua
 var lockerExtend string
-var lockerExtendScript = NewScript(1, lockerExtend)
+var lockerExtendScript = valkey.NewLuaScript(lockerExtend)
 
 // Extend extends our lock expiration by the passed in number of seconds provided the lock value is correct
-func (l *Locker) Extend(rp Pool, value string, expiration time.Duration) error {
-	rc := rp.Get()
-	defer rc.Close()
-
+func (l *Locker) Extend(client valkey.Client, value string, expiration time.Duration) error {
+	ctx := context.Background()
 	seconds := int(expiration / time.Second) // convert our expiration to seconds
 
 	// we use lua here because we only want to set the expiration time if we own it
-	_, err := lockerExtendScript.Do(rc, l.key, value, seconds)
-	return err
+	result := lockerExtendScript.Exec(ctx, client, []string{l.key}, []string{value, fmt.Sprintf("%d", seconds)})
+	return result.Error()
 }
 
 // IsLocked returns whether this lock is currently held by any process.
-func (l *Locker) IsLocked(rp Pool) (bool, error) {
-	rc := rp.Get()
-	defer rc.Close()
+func (l *Locker) IsLocked(client valkey.Client) (bool, error) {
+	ctx := context.Background()
+	cmd := client.B().Exists().Key(l.key).Build()
+	result := client.Do(ctx, cmd)
+	
+	if result.Error() != nil {
+		return false, result.Error()
+	}
 
-	exists, err := Bool(rc.Do("EXISTS", l.key))
+	count, err := result.ToInt64()
 	if err != nil {
 		return false, err
 	}
 
-	return exists, nil
+	return count > 0, nil
 }

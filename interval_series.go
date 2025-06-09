@@ -1,9 +1,12 @@
 package redisx
 
 import (
+	"context"
 	_ "embed"
 	"strconv"
 	"time"
+
+	"github.com/valkey-io/valkey-go"
 )
 
 // IntervalSeries returns all values from interval based hashes.
@@ -19,55 +22,74 @@ func NewIntervalSeries(keyBase string, interval time.Duration, size int) *Interv
 }
 
 // Record increments the value of field by value in the current interval
-func (s *IntervalSeries) Record(rc Conn, field string, value int64) error {
+func (s *IntervalSeries) Record(client valkey.Client, field string, value int64) error {
+	ctx := context.Background()
 	currKey := s.keys()[0]
 
-	rc.Send("MULTI")
-	rc.Send("HINCRBY", currKey, field, value)
-	rc.Send("EXPIRE", currKey, s.size*int(s.interval/time.Second))
-	_, err := rc.Do("EXEC")
-	return err
+	// Use pipeline to execute multiple commands atomically
+	cmds := []valkey.Completed{
+		client.B().Hincrby().Key(currKey).Field(field).Increment(value).Build(),
+		client.B().Expire().Key(currKey).Seconds(int64(s.size * int(s.interval/time.Second))).Build(),
+	}
+	
+	results := client.DoMulti(ctx, cmds...)
+	for _, result := range results {
+		if result.Error() != nil {
+			return result.Error()
+		}
+	}
+	
+	return nil
 }
 
 //go:embed lua/iseries_get.lua
 var iseriesGet string
-var iseriesGetScript = NewScript(-1, iseriesGet)
+var iseriesGetScript = valkey.NewLuaScript(iseriesGet)
 
 // Get gets the values of field in all intervals
-func (s *IntervalSeries) Get(rc Conn, field string) ([]int64, error) {
+func (s *IntervalSeries) Get(client valkey.Client, field string) ([]int64, error) {
+	ctx := context.Background()
 	keys := s.keys()
-	
-	// Create args: [len(keys), key1, key2, ..., field]
-	args := make([]interface{}, 0, len(keys)+2)
-	args = append(args, len(keys))
-	for _, key := range keys {
-		args = append(args, key)
-	}
-	args = append(args, field)
+	args := []string{field}
 
-	values, err := Strings(iseriesGetScript.Do(rc, args...))
+	result := iseriesGetScript.Exec(ctx, client, keys, args)
+	if result.Error() != nil {
+		return nil, result.Error()
+	}
+	
+	// Convert array to strings
+	arr, err := result.ToArray()
 	if err != nil {
 		return nil, err
 	}
+	
+	values := make([]string, len(arr))
+	for i, item := range arr {
+		str, err := item.ToString()
+		if err != nil {
+			return nil, err
+		}
+		values[i] = str
+	}
 
-	result := make([]int64, len(values))
+	resultInts := make([]int64, len(values))
 	for i, v := range values {
 		if v == "" {
-			result[i] = 0
+			resultInts[i] = 0
 		} else {
-			result[i], err = strconv.ParseInt(v, 10, 64)
+			resultInts[i], err = strconv.ParseInt(v, 10, 64)
 			if err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	return result, nil
+	return resultInts, nil
 }
 
 // Total gets the total value of field across all intervals
-func (s *IntervalSeries) Total(rc Conn, field string) (int64, error) {
-	vals, err := s.Get(rc, field)
+func (s *IntervalSeries) Total(client valkey.Client, field string) (int64, error) {
+	vals, err := s.Get(client, field)
 	if err != nil {
 		return 0, err
 	}

@@ -1,8 +1,12 @@
 package redisx
 
 import (
+	"context"
 	_ "embed"
+	"fmt"
 	"time"
+
+	"github.com/valkey-io/valkey-go"
 )
 
 // CappedZSet is a sorted set but enforces a cap on size
@@ -19,20 +23,41 @@ func NewCappedZSet(key string, cap int, expire time.Duration) *CappedZSet {
 
 //go:embed lua/czset_add.lua
 var czsetAdd string
-var czsetAddScript = NewScript(1, czsetAdd)
+var czsetAddScript = valkey.NewLuaScript(czsetAdd)
 
 // Add adds an element to the set, if its score puts in the top `cap` members
-func (z *CappedZSet) Add(rc Conn, member string, score float64) error {
-	_, err := czsetAddScript.Do(rc, z.key, score, member, z.cap, int(z.expire/time.Second))
-	return err
+func (z *CappedZSet) Add(client valkey.Client, member string, score float64) error {
+	ctx := context.Background()
+	keys := []string{z.key}
+	args := []string{fmt.Sprintf("%f", score), member, fmt.Sprintf("%d", z.cap), fmt.Sprintf("%d", int(z.expire/time.Second))}
+	
+	result := czsetAddScript.Exec(ctx, client, keys, args)
+	return result.Error()
 }
 
 // Card returns the cardinality of the set
-func (z *CappedZSet) Card(rc Conn) (int, error) {
-	return Int(rc.Do("ZCARD", z.key))
+func (z *CappedZSet) Card(client valkey.Client) (int, error) {
+	ctx := context.Background()
+	cmd := client.B().Zcard().Key(z.key).Build()
+	result := client.Do(ctx, cmd)
+	
+	if result.Error() != nil {
+		return 0, result.Error()
+	}
+	
+	count, err := result.ToInt64()
+	return int(count), err
 }
 
 // Members returns all members of the set, ordered by ascending rank
-func (z *CappedZSet) Members(rc Conn) ([]string, []float64, error) {
-	return StringsWithScores(rc.Do("ZRANGE", z.key, 0, -1, "WITHSCORES"))
+func (z *CappedZSet) Members(client valkey.Client) ([]string, []float64, error) {
+	ctx := context.Background()
+	cmd := client.B().Zrange().Key(z.key).Min("0").Max("-1").Withscores().Build()
+	result := client.Do(ctx, cmd)
+	
+	if result.Error() != nil {
+		return nil, nil, result.Error()
+	}
+	
+	return StringsWithScores(result, nil)
 }
