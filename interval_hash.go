@@ -1,6 +1,7 @@
 package redisx
 
 import (
+	"context"
 	_ "embed"
 	"errors"
 	"time"
@@ -25,10 +26,10 @@ var ihashGet string
 var ihashGetScript = redis.NewScript(-1, ihashGet)
 
 // Get returns the value of the given field
-func (h *IntervalHash) Get(rc redis.Conn, field string) (string, error) {
+func (h *IntervalHash) Get(ctx context.Context, rc redis.Conn, field string) (string, error) {
 	keys := h.keys()
 
-	value, err := redis.String(ihashGetScript.Do(rc, redis.Args{}.Add(len(keys)).AddFlat(keys).Add(field)...))
+	value, err := redis.String(ihashGetScript.DoContext(ctx, rc, redis.Args{}.Add(len(keys)).AddFlat(keys).Add(field)...))
 	if err != nil && err != redis.ErrNil {
 		return "", err
 	}
@@ -40,7 +41,7 @@ var ihashMGet string
 var ihashMGetScript = redis.NewScript(-1, ihashMGet)
 
 // MGet returns the values of the given fields
-func (h *IntervalHash) MGet(rc redis.Conn, fields ...string) ([]string, error) {
+func (h *IntervalHash) MGet(ctx context.Context, rc redis.Conn, fields ...string) ([]string, error) {
 	keys := h.keys()
 
 	// for consistency with HMGET, zero fields is an error
@@ -48,7 +49,7 @@ func (h *IntervalHash) MGet(rc redis.Conn, fields ...string) ([]string, error) {
 		return nil, errors.New("wrong number of arguments for command")
 	}
 
-	value, err := redis.Strings(ihashMGetScript.Do(rc, redis.Args{}.Add(len(keys)).AddFlat(keys).AddFlat(fields)...))
+	value, err := redis.Strings(ihashMGetScript.DoContext(ctx, rc, redis.Args{}.Add(len(keys)).AddFlat(keys).AddFlat(fields)...))
 	if err != nil && err != redis.ErrNil {
 		return nil, err
 	}
@@ -56,33 +57,33 @@ func (h *IntervalHash) MGet(rc redis.Conn, fields ...string) ([]string, error) {
 }
 
 // Set sets the value of the given field
-func (h *IntervalHash) Set(rc redis.Conn, field, value string) error {
+func (h *IntervalHash) Set(ctx context.Context, rc redis.Conn, field, value string) error {
 	key := h.keys()[0]
 
 	rc.Send("MULTI")
 	rc.Send("HSET", key, field, value)
 	rc.Send("EXPIRE", key, h.size*int(h.interval/time.Second))
-	_, err := rc.Do("EXEC")
+	_, err := redis.DoContext(rc, ctx, "EXEC")
 	return err
 }
 
 // Del removes the given fields
-func (h *IntervalHash) Del(rc redis.Conn, fields ...string) error {
+func (h *IntervalHash) Del(ctx context.Context, rc redis.Conn, fields ...string) error {
 	rc.Send("MULTI")
 	for _, k := range h.keys() {
 		rc.Send("HDEL", redis.Args{}.Add(k).AddFlat(fields)...)
 	}
-	_, err := rc.Do("EXEC")
+	_, err := redis.DoContext(rc, ctx, "EXEC")
 	return err
 }
 
 // Clear removes all fields
-func (h *IntervalHash) Clear(rc redis.Conn) error {
+func (h *IntervalHash) Clear(ctx context.Context, rc redis.Conn) error {
 	rc.Send("MULTI")
 	for _, k := range h.keys() {
 		rc.Send("DEL", k)
 	}
-	_, err := rc.Do("EXEC")
+	_, err := redis.DoContext(rc, ctx, "EXEC")
 	return err
 }
 
