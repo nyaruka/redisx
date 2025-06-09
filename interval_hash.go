@@ -4,8 +4,6 @@ import (
 	_ "embed"
 	"errors"
 	"time"
-
-	"github.com/gomodule/redigo/redis"
 )
 
 // IntervalHash operates like a hash map but with expiring intervals
@@ -22,14 +20,22 @@ func NewIntervalHash(keyBase string, interval time.Duration, size int) *Interval
 
 //go:embed lua/ihash_get.lua
 var ihashGet string
-var ihashGetScript = redis.NewScript(-1, ihashGet)
+var ihashGetScript = NewScript(-1, ihashGet)
 
 // Get returns the value of the given field
-func (h *IntervalHash) Get(rc redis.Conn, field string) (string, error) {
+func (h *IntervalHash) Get(rc Conn, field string) (string, error) {
 	keys := h.keys()
+	
+	// Create args: [len(keys), key1, key2, ..., field]
+	args := make([]interface{}, 0, len(keys)+2)
+	args = append(args, len(keys))
+	for _, key := range keys {
+		args = append(args, key)
+	}
+	args = append(args, field)
 
-	value, err := redis.String(ihashGetScript.Do(rc, redis.Args{}.Add(len(keys)).AddFlat(keys).Add(field)...))
-	if err != nil && err != redis.ErrNil {
+	value, err := String(ihashGetScript.Do(rc, args...))
+	if err != nil {
 		return "", err
 	}
 	return value, nil
@@ -37,10 +43,10 @@ func (h *IntervalHash) Get(rc redis.Conn, field string) (string, error) {
 
 //go:embed lua/ihash_mget.lua
 var ihashMGet string
-var ihashMGetScript = redis.NewScript(-1, ihashMGet)
+var ihashMGetScript = NewScript(-1, ihashMGet)
 
 // MGet returns the values of the given fields
-func (h *IntervalHash) MGet(rc redis.Conn, fields ...string) ([]string, error) {
+func (h *IntervalHash) MGet(rc Conn, fields ...string) ([]string, error) {
 	keys := h.keys()
 
 	// for consistency with HMGET, zero fields is an error
@@ -48,15 +54,22 @@ func (h *IntervalHash) MGet(rc redis.Conn, fields ...string) ([]string, error) {
 		return nil, errors.New("wrong number of arguments for command")
 	}
 
-	value, err := redis.Strings(ihashMGetScript.Do(rc, redis.Args{}.Add(len(keys)).AddFlat(keys).AddFlat(fields)...))
-	if err != nil && err != redis.ErrNil {
-		return nil, err
+	// Create args: [len(keys), key1, key2, ..., field1, field2, ...]
+	args := make([]interface{}, 0, len(keys)+len(fields)+1)
+	args = append(args, len(keys))
+	for _, key := range keys {
+		args = append(args, key)
 	}
-	return value, nil
+	for _, field := range fields {
+		args = append(args, field)
+	}
+
+	// Note: we ignore ErrNil equivalent in valkey
+	return Strings(ihashMGetScript.Do(rc, args...))
 }
 
 // Set sets the value of the given field
-func (h *IntervalHash) Set(rc redis.Conn, field, value string) error {
+func (h *IntervalHash) Set(rc Conn, field, value string) error {
 	key := h.keys()[0]
 
 	rc.Send("MULTI")
@@ -67,17 +80,22 @@ func (h *IntervalHash) Set(rc redis.Conn, field, value string) error {
 }
 
 // Del removes the given fields
-func (h *IntervalHash) Del(rc redis.Conn, fields ...string) error {
+func (h *IntervalHash) Del(rc Conn, fields ...string) error {
 	rc.Send("MULTI")
 	for _, k := range h.keys() {
-		rc.Send("HDEL", redis.Args{}.Add(k).AddFlat(fields)...)
+		args := make([]interface{}, 0, len(fields)+1)
+		args = append(args, k)
+		for _, field := range fields {
+			args = append(args, field)
+		}
+		rc.Send("HDEL", args...)
 	}
 	_, err := rc.Do("EXEC")
 	return err
 }
 
 // Clear removes all fields
-func (h *IntervalHash) Clear(rc redis.Conn) error {
+func (h *IntervalHash) Clear(rc Conn) error {
 	rc.Send("MULTI")
 	for _, k := range h.keys() {
 		rc.Send("DEL", k)

@@ -4,8 +4,6 @@ import (
 	_ "embed"
 	"fmt"
 	"time"
-
-	"github.com/gomodule/redigo/redis"
 )
 
 // Locker is a lock implementation where grabbing returns a lock value and that value must be
@@ -23,7 +21,7 @@ func NewLocker(key string, expiration time.Duration) *Locker {
 // Grab tries to grab this lock in an atomic operation. It returns the lock value if successful.
 // It will retry every second until the retry period has ended, returning empty string if not
 // acquired in that time.
-func (l *Locker) Grab(rp *redis.Pool, retry time.Duration) (string, error) {
+func (l *Locker) Grab(rp Pool, retry time.Duration) (string, error) {
 	value := RandomBase64(10)                  // generate our lock value
 	expires := int(l.expiration / time.Second) // convert our expiration to seconds
 
@@ -52,11 +50,11 @@ func (l *Locker) Grab(rp *redis.Pool, retry time.Duration) (string, error) {
 
 //go:embed lua/locker_release.lua
 var lockerRelease string
-var lockerReleaseScript = redis.NewScript(1, lockerRelease)
+var lockerReleaseScript = NewScript(1, lockerRelease)
 
 // Release releases this lock if the given lock value is correct (i.e we own this lock). It is not an
 // error to release a lock that is no longer present.
-func (l *Locker) Release(rp *redis.Pool, value string) error {
+func (l *Locker) Release(rp Pool, value string) error {
 	rc := rp.Get()
 	defer rc.Close()
 
@@ -67,10 +65,10 @@ func (l *Locker) Release(rp *redis.Pool, value string) error {
 
 //go:embed lua/locker_extend.lua
 var lockerExtend string
-var lockerExtendScript = redis.NewScript(1, lockerExtend)
+var lockerExtendScript = NewScript(1, lockerExtend)
 
 // Extend extends our lock expiration by the passed in number of seconds provided the lock value is correct
-func (l *Locker) Extend(rp *redis.Pool, value string, expiration time.Duration) error {
+func (l *Locker) Extend(rp Pool, value string, expiration time.Duration) error {
 	rc := rp.Get()
 	defer rc.Close()
 
@@ -82,11 +80,11 @@ func (l *Locker) Extend(rp *redis.Pool, value string, expiration time.Duration) 
 }
 
 // IsLocked returns whether this lock is currently held by any process.
-func (l *Locker) IsLocked(rp *redis.Pool) (bool, error) {
+func (l *Locker) IsLocked(rp Pool) (bool, error) {
 	rc := rp.Get()
 	defer rc.Close()
 
-	exists, err := redis.Bool(rc.Do("EXISTS", l.key))
+	exists, err := Bool(rc.Do("EXISTS", l.key))
 	if err != nil {
 		return false, err
 	}

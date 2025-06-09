@@ -2,9 +2,8 @@ package redisx
 
 import (
 	_ "embed"
+	"strconv"
 	"time"
-
-	"github.com/gomodule/redigo/redis"
 )
 
 // IntervalSeries returns all values from interval based hashes.
@@ -20,7 +19,7 @@ func NewIntervalSeries(keyBase string, interval time.Duration, size int) *Interv
 }
 
 // Record increments the value of field by value in the current interval
-func (s *IntervalSeries) Record(rc redis.Conn, field string, value int64) error {
+func (s *IntervalSeries) Record(rc Conn, field string, value int64) error {
 	currKey := s.keys()[0]
 
 	rc.Send("MULTI")
@@ -32,18 +31,42 @@ func (s *IntervalSeries) Record(rc redis.Conn, field string, value int64) error 
 
 //go:embed lua/iseries_get.lua
 var iseriesGet string
-var iseriesGetScript = redis.NewScript(-1, iseriesGet)
+var iseriesGetScript = NewScript(-1, iseriesGet)
 
 // Get gets the values of field in all intervals
-func (s *IntervalSeries) Get(rc redis.Conn, field string) ([]int64, error) {
+func (s *IntervalSeries) Get(rc Conn, field string) ([]int64, error) {
 	keys := s.keys()
-	args := redis.Args{}.Add(len(keys)).AddFlat(keys).Add(field)
+	
+	// Create args: [len(keys), key1, key2, ..., field]
+	args := make([]interface{}, 0, len(keys)+2)
+	args = append(args, len(keys))
+	for _, key := range keys {
+		args = append(args, key)
+	}
+	args = append(args, field)
 
-	return redis.Int64s(iseriesGetScript.Do(rc, args...))
+	values, err := Strings(iseriesGetScript.Do(rc, args...))
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]int64, len(values))
+	for i, v := range values {
+		if v == "" {
+			result[i] = 0
+		} else {
+			result[i], err = strconv.ParseInt(v, 10, 64)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return result, nil
 }
 
 // Total gets the total value of field across all intervals
-func (s *IntervalSeries) Total(rc redis.Conn, field string) (int64, error) {
+func (s *IntervalSeries) Total(rc Conn, field string) (int64, error) {
 	vals, err := s.Get(rc, field)
 	if err != nil {
 		return 0, err

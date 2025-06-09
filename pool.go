@@ -2,74 +2,93 @@ package redisx
 
 import (
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/gomodule/redigo/redis"
+	"github.com/valkey-io/valkey-go"
 )
 
 // WithMaxActive configures maximum number of concurrent connections to allow
-func WithMaxActive(v int) func(*redis.Pool) {
-	return func(rp *redis.Pool) { rp.MaxActive = v }
+// Note: valkey-go handles connection pooling internally, so this is a no-op for compatibility
+func WithMaxActive(v int) func(Pool) {
+	return func(p Pool) {
+		// valkey-go handles connection pooling internally
+	}
 }
 
 // WithMaxIdle configures the maximum number of idle connections to keep
-func WithMaxIdle(v int) func(*redis.Pool) {
-	return func(rp *redis.Pool) { rp.MaxIdle = v }
+// Note: valkey-go handles connection pooling internally, so this is a no-op for compatibility
+func WithMaxIdle(v int) func(Pool) {
+	return func(p Pool) {
+		// valkey-go handles connection pooling internally
+	}
 }
 
 // WithIdleTimeout configures how long to wait before reaping a connection
-func WithIdleTimeout(v time.Duration) func(*redis.Pool) {
-	return func(rp *redis.Pool) { rp.IdleTimeout = v }
+// Note: valkey-go handles connection pooling internally, so this is a no-op for compatibility
+func WithIdleTimeout(v time.Duration) func(Pool) {
+	return func(p Pool) {
+		// valkey-go handles connection pooling internally
+	}
 }
 
 // NewPool creates a new pool with the given options
-func NewPool(redisURL string, options ...func(*redis.Pool)) (*redis.Pool, error) {
+func NewPool(redisURL string, options ...func(Pool)) (Pool, error) {
 	parsedURL, err := url.Parse(redisURL)
 	if err != nil {
 		return nil, err
 	}
 
-	dial := func() (redis.Conn, error) {
-		conn, err := redis.Dial("tcp", parsedURL.Host)
-		if err != nil {
-			return nil, err
-		}
+	// Parse connection options
+	clientOptions := valkey.ClientOption{
+		InitAddress: []string{parsedURL.Host},
+	}
 
-		// send auth if required
-		if parsedURL.User != nil {
-			pass, authRequired := parsedURL.User.Password()
-			if authRequired {
-				if _, err := conn.Do("AUTH", pass); err != nil {
-					conn.Close()
-					return nil, err
-				}
+	// Handle auth if present
+	if parsedURL.User != nil {
+		pass, authRequired := parsedURL.User.Password()
+		if authRequired {
+			clientOptions.Password = pass
+		}
+		if user := parsedURL.User.Username(); user != "" {
+			clientOptions.Username = user
+		}
+	}
+
+	// Handle database selection
+	if parsedURL.Path != "" && parsedURL.Path != "/" {
+		dbStr := strings.TrimLeft(parsedURL.Path, "/")
+		if dbStr != "" {
+			db, err := strconv.Atoi(dbStr)
+			if err != nil {
+				return nil, err
 			}
+			clientOptions.SelectDB = db
 		}
-
-		// switch to the right DB
-		_, err = conn.Do("SELECT", strings.TrimLeft(parsedURL.Path, "/"))
-		return conn, err
 	}
 
-	rp := &redis.Pool{
-		MaxActive:   32,
-		MaxIdle:     4,
-		IdleTimeout: 180 * time.Second,
-		Wait:        true, // makes callers wait for a connection
-		Dial:        dial,
-	}
-
-	for _, o := range options {
-		o(rp)
-	}
-
-	// test the connection
-	conn := rp.Get()
-	defer conn.Close()
-	if _, err = conn.Do("PING"); err != nil {
+	// Create valkey client
+	client, err := valkey.NewClient(clientOptions)
+	if err != nil {
 		return nil, err
 	}
 
-	return rp, nil
+	// Create pool wrapper
+	pool := NewValkeyPool(client)
+
+	// Apply options (they're no-ops for valkey but kept for compatibility)
+	for _, o := range options {
+		o(pool)
+	}
+
+	// Test the connection
+	conn := pool.Get()
+	defer conn.Close()
+	if _, err = conn.Do("PING"); err != nil {
+		client.Close()
+		return nil, err
+	}
+
+	return pool, nil
 }

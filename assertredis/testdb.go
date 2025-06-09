@@ -1,10 +1,12 @@
 package assertredis
 
 import (
+	"context"
 	"fmt"
 	"os"
 
-	"github.com/gomodule/redigo/redis"
+	"github.com/nyaruka/redisx"
+	"github.com/valkey-io/valkey-go"
 )
 
 const (
@@ -13,29 +15,33 @@ const (
 )
 
 // TestDB returns a redis pool to our test database
-func TestDB() *redis.Pool {
-	return &redis.Pool{
-		Dial: func() (redis.Conn, error) {
-			conn, err := redis.Dial("tcp", getHostAddress())
-			if err != nil {
-				return nil, err
-			}
-			_, err = conn.Do("SELECT", 0)
-			return conn, err
-		},
+func TestDB() redisx.Pool {
+	client, err := valkey.NewClient(valkey.ClientOption{
+		InitAddress: []string{getHostAddress()},
+		SelectDB:    testDBIndex,
+	})
+	if err != nil {
+		panic(fmt.Sprintf("error creating valkey client: %s", err.Error()))
 	}
+
+	return redisx.NewValkeyPool(client)
 }
 
 // FlushDB flushes the test database
 func FlushDB() {
-	rc, err := redis.Dial("tcp", getHostAddress())
+	client, err := valkey.NewClient(valkey.ClientOption{
+		InitAddress: []string{getHostAddress()},
+		SelectDB:    testDBIndex,
+	})
 	if err != nil {
 		panic(fmt.Sprintf("error connecting to redis db: %s", err.Error()))
 	}
-	rc.Do("SELECT", testDBIndex)
-	_, err = rc.Do("FLUSHDB")
-	if err != nil {
-		panic(fmt.Sprintf("error flushing redis db: %s", err.Error()))
+	defer client.Close()
+
+	cmd := client.B().Flushdb().Build()
+	result := client.Do(context.Background(), cmd)
+	if result.Error() != nil {
+		panic(fmt.Sprintf("error flushing redis db: %s", result.Error()))
 	}
 }
 
