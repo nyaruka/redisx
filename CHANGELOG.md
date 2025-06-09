@@ -1,3 +1,8 @@
+v0.11.0 (2025-06-09)
+-------------------------
+ * Update deps
+ * Add context.Context support to all main library functions
+
 v0.10.0 (2025-05-20)
 -------------------------
  * Add Locker.IsLocked
