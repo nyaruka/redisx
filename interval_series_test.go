@@ -1,6 +1,7 @@
 package redisx_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 )
 
 func TestIntervalSeries(t *testing.T) {
+	ctx := context.Background()
 	client := assertredis.TestDB()
 	// removed rc := rp.Get()
 	defer client.Close()
@@ -21,12 +23,12 @@ func TestIntervalSeries(t *testing.T) {
 	setNow := func(d time.Time) { dates.SetNowFunc(dates.NewFixedNow(d)) }
 
 	assertGet := func(s *redisx.IntervalSeries, f string, expected []int64) {
-		actual, err := s.Get(client, f)
+		actual, err := s.Get(ctx, client, f)
 		assert.NoError(t, err, "unexpected error getting field %s", f)
 		assert.Equal(t, expected, actual, "expected series field %s to contain %v", f, expected)
 	}
 	assertTotal := func(s *redisx.IntervalSeries, f string, expected int64) {
-		actual, err := s.Total(client, f)
+		actual, err := s.Total(ctx, client, f)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, actual)
 	}
@@ -35,12 +37,12 @@ func TestIntervalSeries(t *testing.T) {
 
 	// create a 5 minute x 5 based series
 	series1 := redisx.NewIntervalSeries("foos", time.Minute*5, 5)
-	series1.Record(client, "A", 2)
+	series1.Record(ctx, client, "A", 2)
 
 	setNow(time.Date(2021, 11, 18, 12, 9, 3, 234567, time.UTC)) // move time forward but within same interval
 
-	series1.Record(client, "A", 7)
-	series1.Record(client, "B", 4)
+	series1.Record(ctx, client, "A", 7)
+	series1.Record(ctx, client, "B", 4)
 
 	assertredis.HGetAll(t, client, "foos:2021-11-18T12:05", map[string]string{"A": "9", "B": "4"})
 
@@ -53,8 +55,8 @@ func TestIntervalSeries(t *testing.T) {
 
 	setNow(time.Date(2021, 11, 18, 12, 11, 3, 234567, time.UTC)) // move time forward to next interval
 
-	series1.Record(client, "A", 3)
-	series1.Record(client, "B", 2)
+	series1.Record(ctx, client, "A", 3)
+	series1.Record(ctx, client, "B", 2)
 
 	assertredis.HGetAll(t, client, "foos:2021-11-18T12:10", map[string]string{"A": "3", "B": "2"})
 	assertredis.HGetAll(t, client, "foos:2021-11-18T12:05", map[string]string{"A": "9", "B": "4"})
@@ -68,8 +70,8 @@ func TestIntervalSeries(t *testing.T) {
 
 	setNow(time.Date(2021, 11, 18, 12, 26, 3, 234567, time.UTC)) // move time forward 3 intervals
 
-	series1.Record(client, "A", 10)
-	series1.Record(client, "B", 1)
+	series1.Record(ctx, client, "A", 10)
+	series1.Record(ctx, client, "B", 1)
 
 	assertredis.HGetAll(t, client, "foos:2021-11-18T12:25", map[string]string{"A": "10", "B": "1"})
 	assertredis.HGetAll(t, client, "foos:2021-11-18T12:20", map[string]string{})
@@ -86,7 +88,7 @@ func TestIntervalSeries(t *testing.T) {
 
 	setNow(time.Date(2021, 11, 18, 12, 30, 3, 234567, time.UTC)) // move time forward to next interval
 
-	series1.Record(client, "A", 1)
+	series1.Record(ctx, client, "A", 1)
 
 	assertredis.HGetAll(t, client, "foos:2021-11-18T12:30", map[string]string{"A": "1"})
 	assertredis.HGetAll(t, client, "foos:2021-11-18T12:25", map[string]string{"A": "10", "B": "1"})

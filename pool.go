@@ -35,7 +35,7 @@ func WithIdleTimeout(v time.Duration) func(valkey.Client) {
 }
 
 // NewPool creates a new pool with the given options
-func NewPool(redisURL string, options ...func(valkey.Client)) (valkey.Client, error) {
+func NewPool(ctx context.Context, redisURL string, options ...func(valkey.Client)) (valkey.Client, error) {
 	parsedURL, err := url.Parse(redisURL)
 	if err != nil {
 		return nil, err
@@ -81,7 +81,6 @@ func NewPool(redisURL string, options ...func(valkey.Client)) (valkey.Client, er
 	}
 
 	// Test the connection
-	ctx := context.Background()
 	result := client.Do(ctx, client.B().Ping().Build())
 	if result.Error() != nil {
 		client.Close()

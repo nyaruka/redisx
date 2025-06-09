@@ -25,8 +25,7 @@ var isetIsMember string
 var isetIsMemberScript = valkey.NewLuaScript(isetIsMember)
 
 // IsMember returns whether we contain the given value
-func (s *IntervalSet) IsMember(client valkey.Client, member string) (bool, error) {
-	ctx := context.Background()
+func (s *IntervalSet) IsMember(ctx context.Context, client valkey.Client, member string) (bool, error) {
 	keys := s.keys()
 	args := []string{member}
 
@@ -44,8 +43,7 @@ func (s *IntervalSet) IsMember(client valkey.Client, member string) (bool, error
 }
 
 // Add adds the given value
-func (s *IntervalSet) Add(client valkey.Client, member string) error {
-	ctx := context.Background()
+func (s *IntervalSet) Add(ctx context.Context, client valkey.Client, member string) error {
 	key := s.keys()[0]
 
 	// Use pipeline to execute multiple commands atomically
@@ -65,8 +63,7 @@ func (s *IntervalSet) Add(client valkey.Client, member string) error {
 }
 
 // Rem removes the given values
-func (s *IntervalSet) Rem(client valkey.Client, members ...string) error {
-	ctx := context.Background()
+func (s *IntervalSet) Rem(ctx context.Context, client valkey.Client, members ...string) error {
 	keys := s.keys()
 	
 	var cmds []valkey.Completed
@@ -86,8 +83,7 @@ func (s *IntervalSet) Rem(client valkey.Client, members ...string) error {
 }
 
 // Clear removes all values
-func (s *IntervalSet) Clear(client valkey.Client) error {
-	ctx := context.Background()
+func (s *IntervalSet) Clear(ctx context.Context, client valkey.Client) error {
 	keys := s.keys()
 	
 	var cmds []valkey.Completed

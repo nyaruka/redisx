@@ -22,8 +22,7 @@ func NewIntervalSeries(keyBase string, interval time.Duration, size int) *Interv
 }
 
 // Record increments the value of field by value in the current interval
-func (s *IntervalSeries) Record(client valkey.Client, field string, value int64) error {
-	ctx := context.Background()
+func (s *IntervalSeries) Record(ctx context.Context, client valkey.Client, field string, value int64) error {
 	currKey := s.keys()[0]
 
 	// Use pipeline to execute multiple commands atomically
@@ -47,8 +46,7 @@ var iseriesGet string
 var iseriesGetScript = valkey.NewLuaScript(iseriesGet)
 
 // Get gets the values of field in all intervals
-func (s *IntervalSeries) Get(client valkey.Client, field string) ([]int64, error) {
-	ctx := context.Background()
+func (s *IntervalSeries) Get(ctx context.Context, client valkey.Client, field string) ([]int64, error) {
 	keys := s.keys()
 	args := []string{field}
 
@@ -88,8 +86,8 @@ func (s *IntervalSeries) Get(client valkey.Client, field string) ([]int64, error
 }
 
 // Total gets the total value of field across all intervals
-func (s *IntervalSeries) Total(client valkey.Client, field string) (int64, error) {
-	vals, err := s.Get(client, field)
+func (s *IntervalSeries) Total(ctx context.Context, client valkey.Client, field string) (int64, error) {
+	vals, err := s.Get(ctx, client, field)
 	if err != nil {
 		return 0, err
 	}

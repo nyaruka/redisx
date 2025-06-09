@@ -26,8 +26,7 @@ var czsetAdd string
 var czsetAddScript = valkey.NewLuaScript(czsetAdd)
 
 // Add adds an element to the set, if its score puts in the top `cap` members
-func (z *CappedZSet) Add(client valkey.Client, member string, score float64) error {
-	ctx := context.Background()
+func (z *CappedZSet) Add(ctx context.Context, client valkey.Client, member string, score float64) error {
 	keys := []string{z.key}
 	args := []string{fmt.Sprintf("%f", score), member, fmt.Sprintf("%d", z.cap), fmt.Sprintf("%d", int(z.expire/time.Second))}
 	
@@ -36,8 +35,7 @@ func (z *CappedZSet) Add(client valkey.Client, member string, score float64) err
 }
 
 // Card returns the cardinality of the set
-func (z *CappedZSet) Card(client valkey.Client) (int, error) {
-	ctx := context.Background()
+func (z *CappedZSet) Card(ctx context.Context, client valkey.Client) (int, error) {
 	cmd := client.B().Zcard().Key(z.key).Build()
 	result := client.Do(ctx, cmd)
 	
@@ -50,8 +48,7 @@ func (z *CappedZSet) Card(client valkey.Client) (int, error) {
 }
 
 // Members returns all members of the set, ordered by ascending rank
-func (z *CappedZSet) Members(client valkey.Client) ([]string, []float64, error) {
-	ctx := context.Background()
+func (z *CappedZSet) Members(ctx context.Context, client valkey.Client) ([]string, []float64, error) {
 	cmd := client.B().Zrange().Key(z.key).Min("0").Max("-1").Withscores().Build()
 	result := client.Do(ctx, cmd)
 	

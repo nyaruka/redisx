@@ -26,8 +26,7 @@ var ihashGet string
 var ihashGetScript = valkey.NewLuaScript(ihashGet)
 
 // Get returns the value of the given field
-func (h *IntervalHash) Get(client valkey.Client, field string) (string, error) {
-	ctx := context.Background()
+func (h *IntervalHash) Get(ctx context.Context, client valkey.Client, field string) (string, error) {
 	keys := h.keys()
 	args := []string{field}
 
@@ -44,8 +43,7 @@ var ihashMGet string
 var ihashMGetScript = valkey.NewLuaScript(ihashMGet)
 
 // MGet returns the values of the given fields
-func (h *IntervalHash) MGet(client valkey.Client, fields ...string) ([]string, error) {
-	ctx := context.Background()
+func (h *IntervalHash) MGet(ctx context.Context, client valkey.Client, fields ...string) ([]string, error) {
 	keys := h.keys()
 
 	// for consistency with HMGET, zero fields is an error
@@ -77,8 +75,7 @@ func (h *IntervalHash) MGet(client valkey.Client, fields ...string) ([]string, e
 }
 
 // Set sets the value of the given field
-func (h *IntervalHash) Set(client valkey.Client, field, value string) error {
-	ctx := context.Background()
+func (h *IntervalHash) Set(ctx context.Context, client valkey.Client, field, value string) error {
 	key := h.keys()[0]
 	
 	// Use pipeline to execute multiple commands atomically
@@ -98,8 +95,7 @@ func (h *IntervalHash) Set(client valkey.Client, field, value string) error {
 }
 
 // Del removes the given fields
-func (h *IntervalHash) Del(client valkey.Client, fields ...string) error {
-	ctx := context.Background()
+func (h *IntervalHash) Del(ctx context.Context, client valkey.Client, fields ...string) error {
 	keys := h.keys()
 	
 	var cmds []valkey.Completed
@@ -119,8 +115,7 @@ func (h *IntervalHash) Del(client valkey.Client, fields ...string) error {
 }
 
 // Clear removes all fields
-func (h *IntervalHash) Clear(client valkey.Client) error {
-	ctx := context.Background()
+func (h *IntervalHash) Clear(ctx context.Context, client valkey.Client) error {
 	keys := h.keys()
 	
 	var cmds []valkey.Completed
