@@ -1,10 +1,10 @@
 # redisx [![Build Status](https://github.com/nyaruka/redisx/workflows/CI/badge.svg)](https://github.com/nyaruka/redisx/actions?query=workflow%3ACI) [![codecov](https://codecov.io/gh/nyaruka/redisx/branch/main/graph/badge.svg)](https://codecov.io/gh/nyaruka/redisx) [![Go Report Card](https://goreportcard.com/badge/github.com/nyaruka/redisx)](https://goreportcard.com/report/github.com/nyaruka/redisx)
 
-redisx is a library of Go utilities built on the [redigo](github.com/gomodule/redigo) redis client library.
+redisx is a library of Go utilities built on the [redigo](github.com/gomodule/redigo) client library.
 
 ## NewPool
 
-Simplifies creating a new Redis connection pool, with optional auth, and tests that the connection works:
+Simplifies creating a new Valkey connection pool, with optional auth, and tests that the connection works:
 
 ```go
 rp, err := redisx.NewPool(
@@ -17,7 +17,7 @@ rp, err := redisx.NewPool(
 
 ## IntervalSet
 
-Creating very large numbers of Redis keys can hurt performance, but putting them all in a single set requires that they all have the same expiration. `IntervalSet` is a way to have multiple sets based on time intervals, accessible like a single set. You trade accuracy of expiry times for a significantly reduced key space. For example using 2 intervals of 24 hours:
+Creating very large numbers of keys can hurt performance, but putting them all in a single set requires that they all have the same expiration. `IntervalSet` is a way to have multiple sets based on time intervals, accessible like a single set. You trade accuracy of expiry times for a significantly reduced key space. For example using 2 intervals of 24 hours:
 
 ```go
 set := NewIntervalSet("foos", time.Hour*24, 2)
@@ -27,7 +27,7 @@ set.Add(rc, "B")  // time is 2021-12-03T10:00
 set.Add(rc, "C")  // time is 2021-12-03T11:00
 ```
 
-Creates 2 Redis sets like:
+Creates 2 sets like:
 
 ```
 foos:2021-12-02 => {"A"}       // expires at 2021-12-04T09:00
@@ -54,7 +54,7 @@ hash.Set(rc, "B", "2")  // time is 2021-12-02T10:15
 hash.Set(rc, "C", "3")  // time is 2021-12-02T10:20
 ```
 
-Creates 2 Redis hashes like:
+Creates 2 hashes like:
 
 ```
 foos:2021-12-02T09:00 => {"A": "1"}            // expires at 2021-12-02T11:10
@@ -87,7 +87,7 @@ series.Record(rc, "A", 5)  // time is 2021-12-02T11:25
 series.Record(rc, "B", 1)  // time is 2021-12-02T11:30
 ```
 
-Creates 3 Redis hashes like:
+Creates 3 hashes like:
 
 ```
 foos:2021-12-02T09:00 => {"A": "3"}            // expires at 2021-12-02T12:15
@@ -119,7 +119,7 @@ cset.Members(rc)      // ["C", "D", "E"] / [3, 4, 5]
 
 ## Testing Asserts
 
-The `assertredis` package contains several asserts useful for testing the state of a Redis database.
+The `assertredis` package contains several asserts useful for testing the state of a database.
 
 ```go
 rp := assertredis.TestDB()
