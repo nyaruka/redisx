@@ -7,18 +7,18 @@ import (
 
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/redisx"
-	"github.com/nyaruka/redisx/assertredis"
+	"github.com/nyaruka/redisx/assertvk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestIntervalSet(t *testing.T) {
 	ctx := context.Background()
-	rp := assertredis.TestDB()
+	rp := assertvk.TestDB()
 	rc := rp.Get()
 	defer rc.Close()
 
-	defer assertredis.FlushDB()
+	defer assertvk.FlushDB()
 
 	defer dates.SetNowFunc(time.Now)
 	setNow := func(d time.Time) { dates.SetNowFunc(dates.NewFixedNow(d)) }
@@ -31,8 +31,8 @@ func TestIntervalSet(t *testing.T) {
 	assert.NoError(t, set1.Add(ctx, rc, "B"))
 	assert.NoError(t, set1.Add(ctx, rc, "C"))
 
-	assertredis.SMembers(t, rc, "foos:2021-11-18", []string{"A", "B", "C"})
-	assertredis.SMembers(t, rc, "foos:2021-11-17", []string{})
+	assertvk.SMembers(t, rc, "foos:2021-11-18", []string{"A", "B", "C"})
+	assertvk.SMembers(t, rc, "foos:2021-11-17", []string{})
 
 	assertIsMember := func(s *redisx.IntervalSet, v string) {
 		contains, err := s.IsMember(ctx, rc, v)
@@ -56,9 +56,9 @@ func TestIntervalSet(t *testing.T) {
 	set1.Add(ctx, rc, "D")
 	set1.Add(ctx, rc, "E")
 
-	assertredis.SMembers(t, rc, "foos:2021-11-19", []string{"D", "E"})
-	assertredis.SMembers(t, rc, "foos:2021-11-18", []string{"A", "B", "C"})
-	assertredis.SMembers(t, rc, "foos:2021-11-17", []string{})
+	assertvk.SMembers(t, rc, "foos:2021-11-19", []string{"D", "E"})
+	assertvk.SMembers(t, rc, "foos:2021-11-18", []string{"A", "B", "C"})
+	assertvk.SMembers(t, rc, "foos:2021-11-17", []string{})
 
 	assertIsMember(set1, "A")
 	assertIsMember(set1, "B")
@@ -73,10 +73,10 @@ func TestIntervalSet(t *testing.T) {
 	set1.Add(ctx, rc, "F")
 	set1.Add(ctx, rc, "G")
 
-	assertredis.SMembers(t, rc, "foos:2021-11-20", []string{"F", "G"})
-	assertredis.SMembers(t, rc, "foos:2021-11-19", []string{"D", "E"})
-	assertredis.SMembers(t, rc, "foos:2021-11-18", []string{"A", "B", "C"})
-	assertredis.SMembers(t, rc, "foos:2021-11-17", []string{})
+	assertvk.SMembers(t, rc, "foos:2021-11-20", []string{"F", "G"})
+	assertvk.SMembers(t, rc, "foos:2021-11-19", []string{"D", "E"})
+	assertvk.SMembers(t, rc, "foos:2021-11-18", []string{"A", "B", "C"})
+	assertvk.SMembers(t, rc, "foos:2021-11-17", []string{})
 
 	assertNotIsMember(set1, "A") // too old
 	assertNotIsMember(set1, "B") // too old
@@ -91,8 +91,8 @@ func TestIntervalSet(t *testing.T) {
 	err = set1.Rem(ctx, rc, "E") // from yesterday
 	require.NoError(t, err)
 
-	assertredis.SMembers(t, rc, "foos:2021-11-20", []string{"G"})
-	assertredis.SMembers(t, rc, "foos:2021-11-19", []string{"D"})
+	assertvk.SMembers(t, rc, "foos:2021-11-20", []string{"G"})
+	assertvk.SMembers(t, rc, "foos:2021-11-19", []string{"D"})
 
 	assertIsMember(set1, "D")
 	assertNotIsMember(set1, "E")
@@ -102,8 +102,8 @@ func TestIntervalSet(t *testing.T) {
 	err = set1.Clear(ctx, rc)
 	require.NoError(t, err)
 
-	assertredis.SMembers(t, rc, "foos:2021-11-20", []string{})
-	assertredis.SMembers(t, rc, "foos:2021-11-19", []string{})
+	assertvk.SMembers(t, rc, "foos:2021-11-20", []string{})
+	assertvk.SMembers(t, rc, "foos:2021-11-19", []string{})
 
 	assertNotIsMember(set1, "D")
 	assertNotIsMember(set1, "E")
@@ -115,8 +115,8 @@ func TestIntervalSet(t *testing.T) {
 	set2.Add(ctx, rc, "A")
 	set2.Add(ctx, rc, "B")
 
-	assertredis.SMembers(t, rc, "foos:2021-11-20T12:05", []string{"A", "B"})
-	assertredis.SMembers(t, rc, "foos:2021-11-20T12:00", []string{})
+	assertvk.SMembers(t, rc, "foos:2021-11-20T12:05", []string{"A", "B"})
+	assertvk.SMembers(t, rc, "foos:2021-11-20T12:00", []string{})
 
 	assertIsMember(set2, "A")
 	assertIsMember(set2, "B")
@@ -127,8 +127,8 @@ func TestIntervalSet(t *testing.T) {
 	set3.Add(ctx, rc, "A")
 	set3.Add(ctx, rc, "B")
 
-	assertredis.SMembers(t, rc, "foos:2021-11-20T12:07:00", []string{"A", "B"})
-	assertredis.SMembers(t, rc, "foos:2021-11-20T12:06:55", []string{})
+	assertvk.SMembers(t, rc, "foos:2021-11-20T12:07:00", []string{"A", "B"})
+	assertvk.SMembers(t, rc, "foos:2021-11-20T12:06:55", []string{})
 
 	assertIsMember(set3, "A")
 	assertIsMember(set3, "B")

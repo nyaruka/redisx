@@ -7,17 +7,17 @@ import (
 
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/redisx"
-	"github.com/nyaruka/redisx/assertredis"
+	"github.com/nyaruka/redisx/assertvk"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestIntervalSeries(t *testing.T) {
 	ctx := context.Background()
-	rp := assertredis.TestDB()
+	rp := assertvk.TestDB()
 	rc := rp.Get()
 	defer rc.Close()
 
-	defer assertredis.FlushDB()
+	defer assertvk.FlushDB()
 
 	defer dates.SetNowFunc(time.Now)
 	setNow := func(d time.Time) { dates.SetNowFunc(dates.NewFixedNow(d)) }
@@ -44,7 +44,7 @@ func TestIntervalSeries(t *testing.T) {
 	series1.Record(ctx, rc, "A", 7)
 	series1.Record(ctx, rc, "B", 4)
 
-	assertredis.HGetAll(t, rc, "foos:2021-11-18T12:05", map[string]string{"A": "9", "B": "4"})
+	assertvk.HGetAll(t, rc, "foos:2021-11-18T12:05", map[string]string{"A": "9", "B": "4"})
 
 	assertGet(series1, "A", []int64{9, 0, 0, 0, 0})
 	assertGet(series1, "B", []int64{4, 0, 0, 0, 0})
@@ -58,8 +58,8 @@ func TestIntervalSeries(t *testing.T) {
 	series1.Record(ctx, rc, "A", 3)
 	series1.Record(ctx, rc, "B", 2)
 
-	assertredis.HGetAll(t, rc, "foos:2021-11-18T12:10", map[string]string{"A": "3", "B": "2"})
-	assertredis.HGetAll(t, rc, "foos:2021-11-18T12:05", map[string]string{"A": "9", "B": "4"})
+	assertvk.HGetAll(t, rc, "foos:2021-11-18T12:10", map[string]string{"A": "3", "B": "2"})
+	assertvk.HGetAll(t, rc, "foos:2021-11-18T12:05", map[string]string{"A": "9", "B": "4"})
 
 	assertGet(series1, "A", []int64{3, 9, 0, 0, 0})
 	assertGet(series1, "B", []int64{2, 4, 0, 0, 0})
@@ -73,11 +73,11 @@ func TestIntervalSeries(t *testing.T) {
 	series1.Record(ctx, rc, "A", 10)
 	series1.Record(ctx, rc, "B", 1)
 
-	assertredis.HGetAll(t, rc, "foos:2021-11-18T12:25", map[string]string{"A": "10", "B": "1"})
-	assertredis.HGetAll(t, rc, "foos:2021-11-18T12:20", map[string]string{})
-	assertredis.HGetAll(t, rc, "foos:2021-11-18T12:15", map[string]string{})
-	assertredis.HGetAll(t, rc, "foos:2021-11-18T12:10", map[string]string{"A": "3", "B": "2"})
-	assertredis.HGetAll(t, rc, "foos:2021-11-18T12:05", map[string]string{"A": "9", "B": "4"})
+	assertvk.HGetAll(t, rc, "foos:2021-11-18T12:25", map[string]string{"A": "10", "B": "1"})
+	assertvk.HGetAll(t, rc, "foos:2021-11-18T12:20", map[string]string{})
+	assertvk.HGetAll(t, rc, "foos:2021-11-18T12:15", map[string]string{})
+	assertvk.HGetAll(t, rc, "foos:2021-11-18T12:10", map[string]string{"A": "3", "B": "2"})
+	assertvk.HGetAll(t, rc, "foos:2021-11-18T12:05", map[string]string{"A": "9", "B": "4"})
 
 	assertGet(series1, "A", []int64{10, 0, 0, 3, 9})
 	assertGet(series1, "B", []int64{1, 0, 0, 2, 4})
@@ -90,11 +90,11 @@ func TestIntervalSeries(t *testing.T) {
 
 	series1.Record(ctx, rc, "A", 1)
 
-	assertredis.HGetAll(t, rc, "foos:2021-11-18T12:30", map[string]string{"A": "1"})
-	assertredis.HGetAll(t, rc, "foos:2021-11-18T12:25", map[string]string{"A": "10", "B": "1"})
-	assertredis.HGetAll(t, rc, "foos:2021-11-18T12:20", map[string]string{})
-	assertredis.HGetAll(t, rc, "foos:2021-11-18T12:15", map[string]string{})
-	assertredis.HGetAll(t, rc, "foos:2021-11-18T12:10", map[string]string{"A": "3", "B": "2"})
+	assertvk.HGetAll(t, rc, "foos:2021-11-18T12:30", map[string]string{"A": "1"})
+	assertvk.HGetAll(t, rc, "foos:2021-11-18T12:25", map[string]string{"A": "10", "B": "1"})
+	assertvk.HGetAll(t, rc, "foos:2021-11-18T12:20", map[string]string{})
+	assertvk.HGetAll(t, rc, "foos:2021-11-18T12:15", map[string]string{})
+	assertvk.HGetAll(t, rc, "foos:2021-11-18T12:10", map[string]string{"A": "3", "B": "2"})
 
 	assertGet(series1, "A", []int64{1, 10, 0, 0, 3})
 	assertGet(series1, "B", []int64{0, 1, 0, 0, 2})

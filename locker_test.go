@@ -6,17 +6,17 @@ import (
 	"time"
 
 	"github.com/nyaruka/redisx"
-	"github.com/nyaruka/redisx/assertredis"
+	"github.com/nyaruka/redisx/assertvk"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestLocker(t *testing.T) {
 	ctx := context.Background()
-	rp := assertredis.TestDB()
+	rp := assertvk.TestDB()
 	rc := rp.Get()
 	defer rc.Close()
 
-	defer assertredis.FlushDB()
+	defer assertvk.FlushDB()
 
 	locker := redisx.NewLocker("test", time.Second*5)
 
@@ -33,7 +33,7 @@ func TestLocker(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, isLocked)
 
-	assertredis.Exists(t, rc, "test")
+	assertvk.Exists(t, rc, "test")
 
 	// try to acquire the same lock, should fail
 	lock2, err := locker.Grab(ctx, rp, time.Second)
@@ -60,18 +60,18 @@ func TestLocker(t *testing.T) {
 	assert.NoError(t, err)
 
 	// no error but also dooesn't release the lock
-	assertredis.Exists(t, rc, "test")
+	assertvk.Exists(t, rc, "test")
 
 	// release the lock
 	err = locker.Release(ctx, rp, lock3)
 	assert.NoError(t, err)
 
-	assertredis.NotExists(t, rc, "test")
+	assertvk.NotExists(t, rc, "test")
 
 	// new grab should work
 	lock5, err := locker.Grab(ctx, rp, time.Second*5)
 	assert.NoError(t, err)
 	assert.NotZero(t, lock5)
 
-	assertredis.Exists(t, rc, "test")
+	assertvk.Exists(t, rc, "test")
 }
