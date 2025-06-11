@@ -8,14 +8,10 @@ jobs:
       image: golang:1.24
 
     services:
-      redis6:
-        image: redis:6.2-alpine
+      valkey7:
+        image: valkey/valkey:7.2-alpine
         ports:
-          - 6362:6379
-      redis7:
-        image: redis:7.4-alpine
-        ports:
-          - 6374:6379
+          - 6372:6379
       valkey8:
         image: valkey/valkey:8.0-alpine
         ports:
@@ -23,7 +19,7 @@ jobs:
 
     strategy:
       matrix:
-        redis-host: [redis6, redis7, valkey8]
+        valkey-host: [valkey7, valkey8]
 
     steps:
     - name: Checkout code
@@ -31,7 +27,7 @@ jobs:
 
     - name: Run tests
       env:
-        REDIS_HOST: ${{ matrix.redis-host }}
+        VALKEY_HOST: ${{ matrix.valkey-host }}
       run: go test -p=1 -coverprofile=coverage.text -covermode=atomic ./...
 
     - name: Upload coverage

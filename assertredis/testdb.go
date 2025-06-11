@@ -31,17 +31,17 @@ func TestDB() *redis.Pool {
 func FlushDB() {
 	rc, err := redis.Dial("tcp", getHostAddress())
 	if err != nil {
-		panic(fmt.Sprintf("error connecting to redis db: %s", err.Error()))
+		panic(fmt.Sprintf("error connecting to valkey db: %s", err.Error()))
 	}
 	redis.DoContext(rc, context.Background(), "SELECT", testDBIndex)
 	_, err = redis.DoContext(rc, context.Background(), "FLUSHDB")
 	if err != nil {
-		panic(fmt.Sprintf("error flushing redis db: %s", err.Error()))
+		panic(fmt.Sprintf("error flushing valkey db: %s", err.Error()))
 	}
 }
 
 func getHostAddress() string {
-	host := os.Getenv("REDIS_HOST")
+	host := os.Getenv("VALKEY_HOST")
 	if host == "" {
 		host = "localhost"
 	}
