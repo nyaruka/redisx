@@ -1,10 +1,10 @@
 # redisx [![Build Status](https://github.com/nyaruka/redisx/workflows/CI/badge.svg)](https://github.com/nyaruka/redisx/actions?query=workflow%3ACI) [![codecov](https://codecov.io/gh/nyaruka/redisx/branch/main/graph/badge.svg)](https://codecov.io/gh/nyaruka/redisx) [![Go Report Card](https://goreportcard.com/badge/github.com/nyaruka/redisx)](https://goreportcard.com/report/github.com/nyaruka/redisx)
 
-redisx is a library of Go utilities built on the [redigo](github.com/gomodule/redigo) client library.
+redisx is a go library of Valkey utilities built on the [redigo](github.com/gomodule/redigo) client library.
 
 ## NewPool
 
-Simplifies creating a new Valkey connection pool, with optional auth, and tests that the connection works:
+Simplifies creating a new connection pool, with optional auth, and tests that the connection works:
 
 ```go
 rp, err := redisx.NewPool(
@@ -119,17 +119,17 @@ cset.Members(rc)      // ["C", "D", "E"] / [3, 4, 5]
 
 ## Testing Asserts
 
-The `assertredis` package contains several asserts useful for testing the state of a database.
+The `assertvk` package contains several asserts useful for testing the state of a database.
 
 ```go
-rp := assertredis.TestDB()
+rp := assertvk.TestDB()
 rc := rp.Get()
 defer rc.Close()
 
-assertredis.Keys(t, rc, "*", []string{"foo", "bar"})
-assertredis.Exists(t, rc, "foo")
-assertredis.NotExists(t, rc, "bar")
-assertredis.Get(t, rc, "foo", "123")
-assertredis.SCard(t, rc, "foo_set", 2)
-assertredis.SMembers(t, rc, "foo_set", []string{"123", "234"})
+assertvk.Keys(t, rc, "*", []string{"foo", "bar"})
+assertvk.Exists(t, rc, "foo")
+assertvk.NotExists(t, rc, "bar")
+assertvk.Get(t, rc, "foo", "123")
+assertvk.SCard(t, rc, "foo_set", 2)
+assertvk.SMembers(t, rc, "foo_set", []string{"123", "234"})
 ```

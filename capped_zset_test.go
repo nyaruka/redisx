@@ -6,17 +6,17 @@ import (
 	"time"
 
 	"github.com/nyaruka/redisx"
-	"github.com/nyaruka/redisx/assertredis"
+	"github.com/nyaruka/redisx/assertvk"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCappedZSet(t *testing.T) {
 	ctx := context.Background()
-	rp := assertredis.TestDB()
+	rp := assertvk.TestDB()
 	rc := rp.Get()
 	defer rc.Close()
 
-	defer assertredis.FlushDB()
+	defer assertvk.FlushDB()
 
 	assertMembers := func(s *redisx.CappedZSet, expectedMembers []string, expectedScores []float64) {
 		actualMembers, actualScores, err := s.Members(ctx, rc)
@@ -30,7 +30,7 @@ func TestCappedZSet(t *testing.T) {
 	assert.NoError(t, zset.Add(ctx, rc, "C", 3))
 	assert.NoError(t, zset.Add(ctx, rc, "B", 2))
 
-	assertredis.ZGetAll(t, rc, "foo", map[string]float64{"A": 1, "B": 2, "C": 3})
+	assertvk.ZGetAll(t, rc, "foo", map[string]float64{"A": 1, "B": 2, "C": 3})
 
 	card, err := zset.Card(ctx, rc)
 	assert.NoError(t, err)
