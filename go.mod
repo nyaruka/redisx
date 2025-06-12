@@ -1,4 +1,4 @@
-module github.com/nyaruka/redisx
+module github.com/nyaruka/vkutil
 
 go 1.24
 

@@ -1,4 +1,4 @@
-package redisx_test
+package vkutil_test
 
 import (
 	"context"
@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/nyaruka/gocommon/dates"
-	"github.com/nyaruka/redisx"
-	"github.com/nyaruka/redisx/assertvk"
+	vkutil "github.com/nyaruka/vkutil"
+	"github.com/nyaruka/vkutil/assertvk"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,12 +22,12 @@ func TestIntervalSeries(t *testing.T) {
 	defer dates.SetNowFunc(time.Now)
 	setNow := func(d time.Time) { dates.SetNowFunc(dates.NewFixedNow(d)) }
 
-	assertGet := func(s *redisx.IntervalSeries, f string, expected []int64) {
+	assertGet := func(s *vkutil.IntervalSeries, f string, expected []int64) {
 		actual, err := s.Get(ctx, rc, f)
 		assert.NoError(t, err, "unexpected error getting field %s", f)
 		assert.Equal(t, expected, actual, "expected series field %s to contain %v", f, expected)
 	}
-	assertTotal := func(s *redisx.IntervalSeries, f string, expected int64) {
+	assertTotal := func(s *vkutil.IntervalSeries, f string, expected int64) {
 		actual, err := s.Total(ctx, rc, f)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, actual)
@@ -36,7 +36,7 @@ func TestIntervalSeries(t *testing.T) {
 	setNow(time.Date(2021, 11, 18, 12, 7, 3, 234567, time.UTC))
 
 	// create a 5 minute x 5 based series
-	series1 := redisx.NewIntervalSeries("foos", time.Minute*5, 5)
+	series1 := vkutil.NewIntervalSeries("foos", time.Minute*5, 5)
 	series1.Record(ctx, rc, "A", 2)
 
 	setNow(time.Date(2021, 11, 18, 12, 9, 3, 234567, time.UTC)) // move time forward but within same interval

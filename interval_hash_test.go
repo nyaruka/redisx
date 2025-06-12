@@ -1,4 +1,4 @@
-package redisx_test
+package vkutil_test
 
 import (
 	"context"
@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/nyaruka/gocommon/dates"
-	"github.com/nyaruka/redisx"
-	"github.com/nyaruka/redisx/assertvk"
+	vkutil "github.com/nyaruka/vkutil"
+	"github.com/nyaruka/vkutil/assertvk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,19 +26,19 @@ func TestIntervalHash(t *testing.T) {
 
 	setNow(time.Date(2021, 11, 18, 12, 7, 3, 234567, time.UTC))
 
-	assertGet := func(h *redisx.IntervalHash, k, expected string) {
+	assertGet := func(h *vkutil.IntervalHash, k, expected string) {
 		actual, err := h.Get(ctx, rc, k)
 		assert.NoError(t, err, "unexpected error getting key %s", k)
 		assert.Equal(t, expected, actual, "expected hash key %s to contain %s", k, expected)
 	}
-	assertMGet := func(h *redisx.IntervalHash, ks []string, expected []string) {
+	assertMGet := func(h *vkutil.IntervalHash, ks []string, expected []string) {
 		actual, err := h.MGet(ctx, rc, ks...)
 		assert.NoError(t, err, "unexpected error getting keys %s", strings.Join(ks, ","))
 		assert.Equal(t, expected, actual, "expected hash keys %s to contain %s", strings.Join(ks, ","), strings.Join(expected, ","))
 	}
 
 	// create a 24-hour x 2 based hash
-	hash1 := redisx.NewIntervalHash("foos", time.Hour*24, 2)
+	hash1 := vkutil.NewIntervalHash("foos", time.Hour*24, 2)
 	assert.NoError(t, hash1.Set(ctx, rc, "A", "1"))
 	assert.NoError(t, hash1.Set(ctx, rc, "B", "2"))
 	assert.NoError(t, hash1.Set(ctx, rc, "C", "3"))
@@ -120,7 +120,7 @@ func TestIntervalHash(t *testing.T) {
 	assertGet(hash1, "D", "")
 
 	// create a 5 minute x 3 based hash
-	hash2 := redisx.NewIntervalHash("foos", time.Minute*5, 3)
+	hash2 := vkutil.NewIntervalHash("foos", time.Minute*5, 3)
 	hash2.Set(ctx, rc, "A", "1")
 	hash2.Set(ctx, rc, "B", "2")
 
@@ -132,7 +132,7 @@ func TestIntervalHash(t *testing.T) {
 	assertGet(hash2, "C", "")
 
 	// create a 5 second x 2 based set
-	hash3 := redisx.NewIntervalHash("foos", time.Second*5, 2)
+	hash3 := vkutil.NewIntervalHash("foos", time.Second*5, 2)
 	hash3.Set(ctx, rc, "A", "1")
 	hash3.Set(ctx, rc, "B", "2")
 
