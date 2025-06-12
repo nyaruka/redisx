@@ -1,4 +1,4 @@
-# redisx [![Build Status](https://github.com/nyaruka/redisx/workflows/CI/badge.svg)](https://github.com/nyaruka/redisx/actions?query=workflow%3ACI) [![codecov](https://codecov.io/gh/nyaruka/redisx/branch/main/graph/badge.svg)](https://codecov.io/gh/nyaruka/redisx) [![Go Report Card](https://goreportcard.com/badge/github.com/nyaruka/redisx)](https://goreportcard.com/report/github.com/nyaruka/redisx)
+# vkutil [![Build Status](https://github.com/nyaruka/vkutil/workflows/CI/badge.svg)](https://github.com/nyaruka/vkutil/actions?query=workflow%3ACI) [![codecov](https://codecov.io/gh/nyaruka/vkutil/branch/main/graph/badge.svg)](https://codecov.io/gh/nyaruka/vkutil) [![Go Report Card](https://goreportcard.com/badge/github.com/nyaruka/vkutil)](https://goreportcard.com/report/github.com/nyaruka/vkutil)
 
 vkutil is a go library of Valkey utilities built on the [redigo](github.com/gomodule/redigo) client library.
 
