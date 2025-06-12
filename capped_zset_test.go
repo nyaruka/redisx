@@ -1,12 +1,12 @@
-package redisx_test
+package vkutil_test
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	"github.com/nyaruka/redisx"
-	"github.com/nyaruka/redisx/assertvk"
+	vkutil "github.com/nyaruka/vkutil"
+	"github.com/nyaruka/vkutil/assertvk"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,14 +18,14 @@ func TestCappedZSet(t *testing.T) {
 
 	defer assertvk.FlushDB()
 
-	assertMembers := func(s *redisx.CappedZSet, expectedMembers []string, expectedScores []float64) {
+	assertMembers := func(s *vkutil.CappedZSet, expectedMembers []string, expectedScores []float64) {
 		actualMembers, actualScores, err := s.Members(ctx, rc)
 		assert.NoError(t, err)
 		assert.Equal(t, expectedMembers, actualMembers)
 		assert.Equal(t, expectedScores, actualScores)
 	}
 
-	zset := redisx.NewCappedZSet("foo", 3, time.Minute*5)
+	zset := vkutil.NewCappedZSet("foo", 3, time.Minute*5)
 	assert.NoError(t, zset.Add(ctx, rc, "A", 1))
 	assert.NoError(t, zset.Add(ctx, rc, "C", 3))
 	assert.NoError(t, zset.Add(ctx, rc, "B", 2))

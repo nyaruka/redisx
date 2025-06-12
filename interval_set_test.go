@@ -1,4 +1,4 @@
-package redisx_test
+package vkutil_test
 
 import (
 	"context"
@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/nyaruka/gocommon/dates"
-	"github.com/nyaruka/redisx"
-	"github.com/nyaruka/redisx/assertvk"
+	vkutil "github.com/nyaruka/vkutil"
+	"github.com/nyaruka/vkutil/assertvk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,7 +26,7 @@ func TestIntervalSet(t *testing.T) {
 	setNow(time.Date(2021, 11, 18, 12, 0, 3, 234567, time.UTC))
 
 	// create a 24-hour x 2 based set
-	set1 := redisx.NewIntervalSet("foos", time.Hour*24, 2)
+	set1 := vkutil.NewIntervalSet("foos", time.Hour*24, 2)
 	assert.NoError(t, set1.Add(ctx, rc, "A"))
 	assert.NoError(t, set1.Add(ctx, rc, "B"))
 	assert.NoError(t, set1.Add(ctx, rc, "C"))
@@ -34,12 +34,12 @@ func TestIntervalSet(t *testing.T) {
 	assertvk.SMembers(t, rc, "foos:2021-11-18", []string{"A", "B", "C"})
 	assertvk.SMembers(t, rc, "foos:2021-11-17", []string{})
 
-	assertIsMember := func(s *redisx.IntervalSet, v string) {
+	assertIsMember := func(s *vkutil.IntervalSet, v string) {
 		contains, err := s.IsMember(ctx, rc, v)
 		assert.NoError(t, err)
 		assert.True(t, contains, "expected marker to contain %s", v)
 	}
-	assertNotIsMember := func(s *redisx.IntervalSet, v string) {
+	assertNotIsMember := func(s *vkutil.IntervalSet, v string) {
 		contains, err := s.IsMember(ctx, rc, v)
 		assert.NoError(t, err)
 		assert.False(t, contains, "expected marker to not contain %s", v)
@@ -111,7 +111,7 @@ func TestIntervalSet(t *testing.T) {
 	assertNotIsMember(set1, "G")
 
 	// create a 5 minute x 3 based set
-	set2 := redisx.NewIntervalSet("foos", time.Minute*5, 3)
+	set2 := vkutil.NewIntervalSet("foos", time.Minute*5, 3)
 	set2.Add(ctx, rc, "A")
 	set2.Add(ctx, rc, "B")
 
@@ -123,7 +123,7 @@ func TestIntervalSet(t *testing.T) {
 	assertNotIsMember(set2, "C")
 
 	// create a 5 second x 2 based set
-	set3 := redisx.NewIntervalSet("foos", time.Second*5, 2)
+	set3 := vkutil.NewIntervalSet("foos", time.Second*5, 2)
 	set3.Add(ctx, rc, "A")
 	set3.Add(ctx, rc, "B")
 

@@ -1,12 +1,12 @@
-package redisx_test
+package vkutil_test
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	"github.com/nyaruka/redisx"
-	"github.com/nyaruka/redisx/assertvk"
+	vkutil "github.com/nyaruka/vkutil"
+	"github.com/nyaruka/vkutil/assertvk"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,7 +18,7 @@ func TestLocker(t *testing.T) {
 
 	defer assertvk.FlushDB()
 
-	locker := redisx.NewLocker("test", time.Second*5)
+	locker := vkutil.NewLocker("test", time.Second*5)
 
 	isLocked, err := locker.IsLocked(ctx, rp)
 	assert.NoError(t, err)

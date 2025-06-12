@@ -1,17 +1,17 @@
 # redisx [![Build Status](https://github.com/nyaruka/redisx/workflows/CI/badge.svg)](https://github.com/nyaruka/redisx/actions?query=workflow%3ACI) [![codecov](https://codecov.io/gh/nyaruka/redisx/branch/main/graph/badge.svg)](https://codecov.io/gh/nyaruka/redisx) [![Go Report Card](https://goreportcard.com/badge/github.com/nyaruka/redisx)](https://goreportcard.com/report/github.com/nyaruka/redisx)
 
-redisx is a go library of Valkey utilities built on the [redigo](github.com/gomodule/redigo) client library.
+vkutil is a go library of Valkey utilities built on the [redigo](github.com/gomodule/redigo) client library.
 
 ## NewPool
 
 Simplifies creating a new connection pool, with optional auth, and tests that the connection works:
 
 ```go
-rp, err := redisx.NewPool(
+rp, err := vkutil.NewPool(
     "redis://username:password@localhost:6379/15", 
-    redisx.WithMaxActive(10), 
-    redisx.WithMaxIdle(3), 
-    redisx.WithIdleTimeout(time.Minute)
+    vkutil.WithMaxActive(10), 
+    vkutil.WithMaxIdle(3), 
+    vkutil.WithIdleTimeout(time.Minute)
 )
 ```
 
@@ -20,7 +20,7 @@ rp, err := redisx.NewPool(
 Creating very large numbers of keys can hurt performance, but putting them all in a single set requires that they all have the same expiration. `IntervalSet` is a way to have multiple sets based on time intervals, accessible like a single set. You trade accuracy of expiry times for a significantly reduced key space. For example using 2 intervals of 24 hours:
 
 ```go
-set := NewIntervalSet("foos", time.Hour*24, 2)
+set := vkutil.NewIntervalSet("foos", time.Hour*24, 2)
 set.Add(rc, "A")  // time is 2021-12-02T09:00
 ...
 set.Add(rc, "B")  // time is 2021-12-03T10:00
@@ -47,7 +47,7 @@ set.IsMember(rc, "D")   // false
 Same idea as `IntervalSet` but for hashes, and works well for caching values. For example using 2 intervals of 1 hour:
 
 ```go
-hash := NewIntervalHash("foos", time.Hour, 2)
+hash := vkutil.NewIntervalHash("foos", time.Hour, 2)
 hash.Set(rc, "A", "1")  // time is 2021-12-02T09:10
 ...
 hash.Set(rc, "B", "2")  // time is 2021-12-02T10:15
@@ -76,7 +76,7 @@ When getting a value from an `IntervalHash` you're getting the newest value by l
 For example using 3 intervals of 1 hour:
 
 ```go
-series := NewIntervalSeries("foos", time.Hour, 3)
+series := vkutil.NewIntervalSeries("foos", time.Hour, 3)
 series.Record(rc, "A", 1)  // time is 2021-12-02T09:10
 series.Record(rc, "A", 2)  // time is 2021-12-02T09:15
 ...
@@ -108,7 +108,7 @@ series.Get(rc, "C")   // [0, 0, 0]
 The `CappedZSet` type is based on a sorted set but enforces a cap on size, by only retaining the highest ranked members.
 
 ```go
-cset := NewCappedZSet("foos", 3, time.Hour*24)
+cset := vkutil.NewCappedZSet("foos", 3, time.Hour*24)
 cset.Add(rc, "A", 1) 
 cset.Add(rc, "C", 3) 
 cset.Add(rc, "D", 4)
